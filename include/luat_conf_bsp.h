@@ -25,5 +25,6 @@
 
 #define LUAT_USE_NETWORK 1
 #define LUAT_USE_SNTP 1
+#define LUAT_USE_TLS
 
 #endif
