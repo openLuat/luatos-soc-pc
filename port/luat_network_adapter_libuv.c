@@ -343,8 +343,8 @@ static int libuv_socket_receive(int socket_id, uint64_t tag,  uint8_t *buf, uint
     }
 
     if (sockets[socket_id].recv_size == 0 && len > 0) {
-        LLOGD("无数据可读");
-        return -1;
+        LLOGD("无数据可读 expect %d but %d", len, sockets[socket_id].recv_size);
+        return 0;
     }
     if (len > sockets[socket_id].recv_size) {
         len = sockets[socket_id].recv_size;
@@ -369,12 +369,16 @@ static int libuv_socket_receive(int socket_id, uint64_t tag,  uint8_t *buf, uint
 }
 
 static void on_sent(uv_write_t* req, int status) {
+    char* tmp = (char*)req;
+    tmp += sizeof(uv_write_t);
+    uint32_t len = 0;
+    memcpy(&len, tmp, 4);
     int socket_id = (int32_t)req->data;
-    // LLOGD("socket_id sent %d %d", socket_id, status);
+    LLOGD("socket_id sent %d %d %d", socket_id, status, len);
 
     if (status == 0) {
         // LLOGD("发送成功, 执行TX_OK消息");
-        cb_to_nw_task(EV_NW_SOCKET_TX_OK, socket_id, 0, sockets[socket_id].param);
+        cb_to_nw_task(EV_NW_SOCKET_TX_OK, socket_id, len, sockets[socket_id].param);
     }
     else {
         // LLOGD("发送成功, 执行ERROR消息");
@@ -389,16 +393,24 @@ static int libuv_socket_send(int socket_id, uint64_t tag, const uint8_t *buf, ui
 	uv_write_t* req;
     uv_buf_t buff;
 
+    if (len == 0)
+        return 0;
+
     buff = uv_buf_init(buf, len);
     // LLOGD("待发送的内容 %.*s", len, buf);
-    req = luat_heap_malloc(sizeof *req);
+    req = luat_heap_malloc(sizeof(uv_write_t) + 4);
+    memset(req, 0, sizeof(uv_write_t));
+    char* tmp = (char*)req;
+    tmp += sizeof(uv_write_t);
+    memcpy(tmp, &len, 4);
     req->data = (void*)socket_id;
     int ret = uv_write(req, (uv_stream_t*) &sockets[socket_id].tcp, &buff, 1, on_sent);
     // LLOGD("uv_write %d", ret);
     if (ret) {
         luat_heap_free(req);
+        return -1;
     }
-    return ret;
+    return len;
 }
 
 void libuv_socket_clean(int *vaild_socket_list, uint32_t num, void *user_data)

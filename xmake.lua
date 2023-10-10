@@ -134,7 +134,7 @@ target("luatos-lua")
     add_files(luatos.."components/network/libsntp/*.c")
 
     -- mqtt
-    -- add_includedirs(luatos.."components/network/libemqtt",{public = true})
-    -- add_files(luatos.."components/network/libemqtt/*.c")
+    add_includedirs(luatos.."components/network/libemqtt",{public = true})
+    add_files(luatos.."components/network/libemqtt/*.c")
     
 target_end()

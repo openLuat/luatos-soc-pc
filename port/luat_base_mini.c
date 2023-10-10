@@ -32,7 +32,7 @@ static const luaL_Reg loadedlibs[] = {
 #ifdef LUAT_USE_NETWORK
   {"socket", luaopen_socket_adapter},
   {"http", luaopen_http},
-  // {"mqtt", luaopen_mqtt},
+  {"mqtt", luaopen_mqtt},
   {"websocket", luaopen_websocket},
 #endif
   {NULL, NULL}
