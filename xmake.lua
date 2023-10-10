@@ -93,19 +93,30 @@ target("luatos-lua")
     -- crypto
     add_files(luatos.."components/crypto/**.c")
     -- protobuf
-    -- add_includedirs(luatos.."components/serialization/protobuf")
-    -- add_files(luatos.."components/serialization/protobuf/*.c")
+    add_includedirs(luatos.."components/serialization/protobuf")
+    add_files(luatos.."components/serialization/protobuf/*.c")
     -- libgnss
     -- add_includedirs(luatos.."components/minmea")
     -- add_files(luatos.."components/minmea/*.c")
     -- rsa
-    -- add_files(luatos.."components/rsa/**.c")
+    add_files(luatos.."components/rsa/**.c")
+
+    -- gmssl
+    -- add_includedirs(luatos.."components/gmssl/include")
+    -- add_files(luatos.."components/gmssl/src/**.c")
+    -- add_files(luatos.."components/gmssl/bind/*.c")
+
+    -- iconv
+    add_includedirs(luatos.."components/iconv")
+    add_files(luatos.."components/iconv/*.c")
 
     -- c_common
     add_includedirs(luatos.."components/common",{public = true})
     add_files(luatos.."components/common/*.c")
 
+    ----------------------------------------------------------------------
     -- 网络相关
+
     
     add_includedirs(luatos .. "components/common", {public = true})
     add_includedirs(luatos .. "components/network/adapter", {public = true})
@@ -136,5 +147,9 @@ target("luatos-lua")
     -- mqtt
     add_includedirs(luatos.."components/network/libemqtt",{public = true})
     add_files(luatos.."components/network/libemqtt/*.c")
+
+    -- errdump
+    -- add_includedirs(luatos.."components/network/errdump",{public = true})
+    -- add_files(luatos.."components/network/errdump/*.c")
     
 target_end()
