@@ -32,6 +32,14 @@ void* luat_heap_calloc(size_t count, size_t _size) {
     }
     return ptr;
 }
+
+void* luat_heap_zalloc(size_t _size) {
+    void* ptr = malloc(_size);
+    if (ptr != NULL) {
+        memset(ptr, 0, _size);
+    }
+    return ptr;
+}
 //------------------------------------------------
 
 //------------------------------------------------

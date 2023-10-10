@@ -78,6 +78,8 @@ static void timer_cb(uv_timer_t *handle)
     else {
         // LLOGD("single time timer");
     }
+    if (ret)
+        LLOGD("出错了");
     rtos_msg_t msg;
     msg.handler = timer->func;
     msg.ptr = NULL;

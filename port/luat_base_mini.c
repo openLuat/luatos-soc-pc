@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <stdlib.h>
 
+#define LUAT_LOG_TAG "main"
+#include "luat_log.h"
+
 static const luaL_Reg loadedlibs[] = {
   {"_G", luaopen_base}, // _G
   {LUA_LOADLIBNAME, luaopen_package}, // require
@@ -26,6 +29,12 @@ static const luaL_Reg loadedlibs[] = {
   {"json", luaopen_cjson},             // json
   {"zbuff", luaopen_zbuff},            // 
   {"crypto", luaopen_crypto},
+#ifdef LUAT_USE_NETWORK
+  {"socket", luaopen_socket_adapter},
+  {"http", luaopen_http},
+  // {"mqtt", luaopen_mqtt},
+  {"websocket", luaopen_websocket},
+#endif
   {NULL, NULL}
 };
 
@@ -64,4 +73,7 @@ void luat_ota_reboot(int timeout_ms) {
   if (timeout_ms > 0)
     luat_timer_mdelay(timeout_ms);
   exit(0);
+}
+void luat_rtc_set_tamp32(uint32_t tamp) {
+  LLOGE("暂不支持设置时间戳");
 }

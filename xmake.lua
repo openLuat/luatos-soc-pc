@@ -13,7 +13,7 @@ add_requires("libuv")
 set_warnings("allextra")
 set_optimize("fastest")
 -- set language: c11
-set_languages("c11", "cxx11")
+set_languages("gnu11")
 
 add_defines("__LUATOS__", "__XMAKE_BUILD__")
 add_defines("MBEDTLS_CONFIG_FILE=\"mbedtls_config_mini.h\"")
@@ -25,6 +25,7 @@ end
 if is_host("windows") then
     -- add_defines("LUA_USE_WINDOWS")
     add_cflags("/utf-8")
+    add_includedirs("win32")
     -- add_ldflags("-static")
 -- elseif is_host("linux") then
 --     add_defines("LUA_USE_LINUX")
@@ -38,35 +39,12 @@ add_includedirs(luatos.."lua/include",{public = true})
 add_includedirs(luatos.."luat/include",{public = true})
 
 
-
 target("luatos-lua")
     -- set kind
     set_kind("binary")
     set_targetdir("$(buildir)/out")
 
     add_files("src/*.c",{public = true})
-    add_deps("luatos")
-target_end()
-
-
-
-target("luatos-luac")
-    -- set kind
-    set_kind("binary")
-    set_targetdir("$(buildir)/out")
-
-    add_files("src/*.c")
-    add_deps("luatos")
-    add_defines("LUAT_USE_LUAC")
-target_end()
-
-
-target("luatos")
-    -- set kind
-    set_kind("static")
-    set_targetdir("$(buildir)/out")
-    
-    -- add deps
     add_files("port/*.c")
 
     add_files(luatos.."lua/src/*.c")
@@ -75,6 +53,10 @@ target("luatos")
     add_files(luatos.."components/printf/*.c")
     
     -- add_files(luatos.."luat/modules/*.c")
+
+    if is_plat("linux", "macosx") then
+        add_links("pthread", "m", "dl")
+    end
 
     add_files(luatos.."luat/modules/crc.c"
             ,luatos.."luat/modules/luat_base.c"
@@ -117,6 +99,42 @@ target("luatos")
     -- add_includedirs(luatos.."components/minmea")
     -- add_files(luatos.."components/minmea/*.c")
     -- rsa
-    add_files(luatos.."components/rsa/**.c")
+    -- add_files(luatos.."components/rsa/**.c")
+
+    -- c_common
+    add_includedirs(luatos.."components/common",{public = true})
+    add_files(luatos.."components/common/*.c")
+
+    -- 网络相关
+    
+    add_includedirs(luatos .. "components/common", {public = true})
+    add_includedirs(luatos .. "components/network/adapter", {public = true})
+    add_includedirs(luatos .. "components/ethernet/common", {public = true})
+    add_files(luatos .. "components/network/adapter/*.c")
+
+    -- 网络上层协议
+    -- http_parser
+    add_includedirs(luatos.."components/network/http_parser",{public = true})
+    add_files(luatos.."components/network/http_parser/*.c")
+    
+    -- http
+    add_includedirs(luatos.."components/network/libhttp",{public = true})
+    add_files(luatos.."components/network/libhttp/*.c")
+
+    -- libftp
+    -- add_includedirs(luatos.."components/network/libftp",{public = true})
+    -- add_files(luatos.."components/network/libftp/*.c")
+    
+    -- websocket
+    add_includedirs(luatos.."components/network/websocket",{public = true})
+    add_files(luatos.."components/network/websocket/*.c")
+
+    -- sntp
+    add_includedirs(luatos.."components/network/libsntp",{public = true})
+    add_files(luatos.."components/network/libsntp/*.c")
+
+    -- mqtt
+    -- add_includedirs(luatos.."components/network/libemqtt",{public = true})
+    -- add_files(luatos.."components/network/libemqtt/*.c")
     
 target_end()

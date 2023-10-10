@@ -26,10 +26,10 @@ void luat_print(const char* _str) {
 }
 
 void luat_nprint(char *s, size_t l) {
-    char buff[4*1024];
-    memcpy(buff, s, l);
-    buff[l] = 0;
-    printf("%s", buff);
+    printf("%.*s", l, s);
+}
+void luat_log_write(char *s, size_t l) {
+    printf("%.*s", l, s);
 }
 
 void luat_log_set_level(int level) {
@@ -38,7 +38,7 @@ void luat_log_set_level(int level) {
 int luat_log_get_level() {
     return luat_log_level_cur;
 }
-#define LOGLOG_SIZE 1024
+#define LOGLOG_SIZE 4096
 void luat_log_log(int level, const char* tag, const char* _fmt, ...) {
     if (luat_log_level_cur > level) return;
     char buff[LOGLOG_SIZE] = {0};
