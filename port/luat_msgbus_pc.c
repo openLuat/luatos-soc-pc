@@ -19,9 +19,11 @@ typedef struct uv_queue_item
 
 static uv_queue_item_t head;
 
+static uv_mutex_t m;
 
 void luat_msgbus_init(void) {
     head.is_head = 1;
+    uv_mutex_init(&m);
 }
 uint32_t luat_msgbus_put(rtos_msg_t* msg, size_t timeout) {
     uv_queue_item_t *item = luat_heap_malloc(sizeof(uv_queue_item_t));
@@ -31,6 +33,7 @@ uint32_t luat_msgbus_put(rtos_msg_t* msg, size_t timeout) {
     }
     memset(item, 0, sizeof(uv_queue_item_t));
     memcpy(&item->msg, msg, sizeof(rtos_msg_t));
+    uv_mutex_lock(&m);
     uv_queue_item_t* q = &head;
     while (1) {
         if (q->next == NULL) {
@@ -40,6 +43,7 @@ uint32_t luat_msgbus_put(rtos_msg_t* msg, size_t timeout) {
         }
         q = (uv_queue_item_t*)q->next;
     }
+    uv_mutex_unlock(&m);
     return 0;
 }
 uint32_t luat_msgbus_get(rtos_msg_t* msg, size_t timeout) {
@@ -52,11 +56,14 @@ uint32_t luat_msgbus_get(rtos_msg_t* msg, size_t timeout) {
                 timeout --;
                 continue;
             }
+            
+            uv_mutex_lock(&m);
             while (1) {
                 if (q->next == NULL) {
                     memcpy(msg, &q->msg, sizeof(rtos_msg_t));
                     ((uv_queue_item_t*)q->prev)->next = NULL;
                     luat_heap_free(q);
+                    uv_mutex_unlock(&m);
                     return 0;
                 }
                 q = (uv_queue_item_t*)q->next;
@@ -69,17 +76,20 @@ uint32_t luat_msgbus_get(rtos_msg_t* msg, size_t timeout) {
                 uv_sleep(1);
                 continue;
             }
+            uv_mutex_lock(&m);
             while (1) {
                 if (q->next == NULL) {
                     memcpy(msg, &q->msg, sizeof(rtos_msg_t));
                     ((uv_queue_item_t*)q->prev)->next = NULL;
                     luat_heap_free(q);
+                    uv_mutex_unlock(&m);
                     return 0;
                 }
                 q = (uv_queue_item_t*)q->next;
             }
         }
     }
+    uv_mutex_unlock(&m);
     return 1;
 }
 uint32_t luat_msgbus_freesize(void) {
