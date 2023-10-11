@@ -21,4 +21,11 @@ sudo apt-get install -y lib32z1 binutils:i386 libc6:i386 libgcc1:i386 libstdc++5
 ./build_linux_32bit.sh
 ```
 
+## 运行方式
 
+windows 下, 先切换控制台编码集,否则中文会乱码
+
+```
+chcp 65001
+luatos.exe xxx.lua
+```
