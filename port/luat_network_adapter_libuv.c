@@ -157,7 +157,10 @@ static int libuv_create_socket(uint8_t is_tcp, uint64_t *tag, void *param, uint8
     for (size_t i = 0; i < MAX_SOCK_NUM; i++)
     {
         if (sockets[i].tag == 0) {
-            uv_tcp_init(main_loop, &sockets[i].tcp);
+            if (is_tcp)
+                uv_tcp_init(main_loop, &sockets[i].tcp);
+            else
+                uv_udp_init(main_loop, &sockets[i].udp);
             *tag = stag;
             sockets[i].tag = stag;
             sockets[i].param = param;
@@ -219,9 +222,21 @@ static void on_recv(uv_stream_t* tcp,
     }
 }
 
+static void on_recv_udp(uv_udp_t* handle,
+                               ssize_t nread,
+                               const uv_buf_t* buf,
+                               const struct sockaddr* addr,
+                               unsigned flags) {
+    if (nread < 0) {
+        return; // TODO 不太可能吧
+    }
+    LLOGD("暂不支持UDP接收");
+}
+
 static void on_connect(uv_connect_t* req, int status) {
     // LLOGD("on_connect %d", status);
     int32_t socket_id = (int32_t)req->data;
+    int ret = 0;
     if (status != 0) {
         LLOGE("连接服务器失败");
         cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, sockets[socket_id].param);
@@ -232,9 +247,16 @@ static void on_connect(uv_connect_t* req, int status) {
 
     if (status == 0) {
         // LLOGD("启动接收回调");
-        int ret = uv_read_start(&sockets[socket_id].tcp, buf_alloc, on_recv);
-        if (ret) // TODO 中止连接
-            LLOGD("uv_read_start %d", ret);
+        if (sockets[socket_id].is_tcp) {
+            ret = uv_read_start(&sockets[socket_id].tcp, buf_alloc, on_recv);
+            if (ret) // TODO 中止连接
+                LLOGD("uv_read_start %d", ret);
+        }
+        else {    
+            ret = uv_udp_recv_start(&sockets[socket_id].udp, buf_alloc, on_recv_udp);
+            if (ret) // TODO 中止连接
+                LLOGD("uv_read_start %d", ret);
+        }
     }
     else {
         LLOGD("连接失败了,无需启动接收回调啦");
@@ -246,6 +268,8 @@ static int libuv_socket_connect(int socket_id, uint64_t tag,  uint16_t local_por
 {
     CHECK_SOCKET_ID
 
+    int ret = 0;
+
     struct sockaddr_in saddr = {
         .sin_family = AF_INET
     };
@@ -255,9 +279,26 @@ static int libuv_socket_connect(int socket_id, uint64_t tag,  uint16_t local_por
     uv_ip4_name(&saddr, addr, 16);
     LLOGD("connect to %s:%d", addr, remote_port);
     sockets[socket_id].c.data = (void*)socket_id;
-    int ret = uv_tcp_connect(&sockets[socket_id].c, &sockets[socket_id].tcp, (const struct sockaddr*)&saddr, on_connect);
-	if (ret)
-        LLOGD("uv_tcp_connect ret %d", ret);
+    if (sockets[socket_id].is_tcp) {
+        ret = uv_tcp_connect(&sockets[socket_id].c, &sockets[socket_id].tcp, (const struct sockaddr*)&saddr, on_connect);
+	    if (ret)
+            LLOGD("uv_tcp_connect ret %d", ret);
+    }
+    else {
+        if (local_port) {
+            struct sockaddr_in saddr2 = {
+                .sin_family = AF_INET
+            };
+            saddr2.sin_addr.s_addr = 0;
+            saddr2.sin_port = htons(local_port);
+            ret = uv_udp_bind(&sockets[socket_id].udp, (const struct sockaddr*)&saddr2, 0);
+            if (ret)
+                LLOGD("uv_udp_bind ret %d", ret);
+        }
+        ret = uv_udp_connect(&sockets[socket_id].c, &sockets[socket_id].udp, (const struct sockaddr*)&saddr, on_connect);
+	    if (ret)
+            LLOGD("uv_udp_connect ret %d", ret);
+    }
     return ret;
 }
 //作为server绑定一个port，开始监听
@@ -343,7 +384,7 @@ static int libuv_socket_receive(int socket_id, uint64_t tag,  uint8_t *buf, uint
     }
 
     if (sockets[socket_id].recv_size == 0 && len > 0) {
-        LLOGD("无数据可读 expect %d but %d", len, sockets[socket_id].recv_size);
+        LLOGD("需要等待更多数据 expect %d but %d", len, sockets[socket_id].recv_size);
         return 0;
     }
     if (len > sockets[socket_id].recv_size) {
@@ -374,7 +415,7 @@ static void on_sent(uv_write_t* req, int status) {
     uint32_t len = 0;
     memcpy(&len, tmp, 4);
     int socket_id = (int32_t)req->data;
-    LLOGD("socket_id sent %d %d %d", socket_id, status, len);
+    // LLOGD("socket_id sent %d %d %d", socket_id, status, len);
 
     if (status == 0) {
         // LLOGD("发送成功, 执行TX_OK消息");
@@ -384,30 +425,79 @@ static void on_sent(uv_write_t* req, int status) {
         // LLOGD("发送成功, 执行ERROR消息");
         cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, sockets[socket_id].param);
     }
+    luat_heap_free(req);
+}
+
+static void on_sent_udp(uv_udp_send_t* req, int status) {
+    char* tmp = (char*)req;
+    tmp += sizeof(uv_udp_send_t);
+    uint32_t len = 0;
+    memcpy(&len, tmp, 4);
+    int socket_id = (int32_t)req->data;
+    // LLOGD("socket_id sent %d %d %d", socket_id, status, len);
+
+    if (status == 0) {
+        // LLOGD("发送成功, 执行TX_OK消息");
+        cb_to_nw_task(EV_NW_SOCKET_TX_OK, socket_id, len, sockets[socket_id].param);
+    }
+    else {
+        // LLOGD("发送成功, 执行ERROR消息");
+        cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, sockets[socket_id].param);
+    }
+    luat_heap_free(req);
 }
 
 static int libuv_socket_send(int socket_id, uint64_t tag, const uint8_t *buf, uint32_t len, int flags, luat_ip_addr_t *remote_ip, uint16_t remote_port, void *user_data)
 {
     CHECK_SOCKET_ID
 
-	uv_write_t* req;
     uv_buf_t buff;
+    int ret = 0;
+    char* tmp;
+    
+    // TCP
+	uv_write_t* req = NULL;
+
+    // UDP
+    uv_udp_send_t* send_req = NULL;
+    struct sockaddr_in send_addr;
 
     if (len == 0)
         return 0;
 
     buff = uv_buf_init(buf, len);
     // LLOGD("待发送的内容 %.*s", len, buf);
-    req = luat_heap_malloc(sizeof(uv_write_t) + 4);
-    memset(req, 0, sizeof(uv_write_t));
-    char* tmp = (char*)req;
-    tmp += sizeof(uv_write_t);
-    memcpy(tmp, &len, 4);
-    req->data = (void*)socket_id;
-    int ret = uv_write(req, (uv_stream_t*) &sockets[socket_id].tcp, &buff, 1, on_sent);
+    if (sockets[socket_id].is_tcp) {
+        req = luat_heap_malloc(sizeof(uv_write_t));
+        memset(req, 0, sizeof(uv_write_t));
+        tmp = (char*)req;
+        tmp += sizeof(uv_write_t);
+        memcpy(tmp, &len, 4);
+        req->data = (void*)socket_id;
+        ret = uv_write(req, (uv_stream_t*) &sockets[socket_id].tcp, &buff, 1, on_sent);
+        if (ret)
+            LLOGD("uv_write %d", ret);
+    }
+    else {
+        send_req = luat_heap_malloc(sizeof(uv_udp_send_t));
+        memset(send_req, 0, sizeof(uv_udp_send_t));
+        tmp = (char*)send_req;
+        tmp += sizeof(uv_udp_send_t);
+        memcpy(tmp, &len, 4);
+        send_req->data = (void*)socket_id;
+        send_addr.sin_addr.s_addr = remote_ip->ipv4;
+        send_addr.sin_port = htons(remote_port);
+        ret = uv_udp_send(send_req, &sockets[socket_id].udp, &buff, 1, (const struct sockaddr *)&send_addr, on_sent_udp);
+        if (ret)
+            LLOGD("uv_udp_send %d", ret);
+    }
+    
     // LLOGD("uv_write %d", ret);
     if (ret) {
-        luat_heap_free(req);
+        if (req)
+            luat_heap_free(req);
+        if (send_req)
+            luat_heap_free(send_req);
         return -1;
     }
     return len;
