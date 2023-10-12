@@ -124,6 +124,10 @@ target("luatos-lua")
     add_files(luatos .. "components/miniz/*.c")
     add_includedirs(luatos .. "components/miniz")
 
+    -- fskv
+    add_includedirs(luatos.."components/fskv")
+    add_files(luatos.."components/fskv/luat_lib_fskv.c")
+
     -- c_common
     add_includedirs(luatos.."components/common",{public = true})
     add_files(luatos.."components/common/*.c")

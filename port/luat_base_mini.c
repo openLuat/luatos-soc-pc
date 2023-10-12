@@ -59,6 +59,9 @@ static const luaL_Reg loadedlibs[] = {
 #ifdef LUAT_USE_FS
   {"fs",      luaopen_fs},                // 文件系统库,在io库之外再提供一些方法
 #endif
+#ifdef LUAT_USE_FSKV
+  {"fskv",      luaopen_fskv},
+#endif
 #ifdef LUAT_USE_NETWORK
   {"socket", luaopen_socket_adapter},
   {"http", luaopen_http},
