@@ -19,6 +19,7 @@ uint8_t luavm_heap[LUAT_HEAP_SIZE] = {0};
 
 int cmdline_argc;
 char** cmdline_argv;
+uv_timespec64_t boot_ts;
 
 int lua_main (int argc, char **argv);
 
@@ -37,7 +38,8 @@ static void _idle(uv_idle_t* handle) {
 }
 
 // boot
-int main(int argc, char** argv) {   
+int main(int argc, char** argv) {
+    uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
     main_loop = malloc(sizeof(uv_loop_t));
     uv_loop_init(main_loop);
 

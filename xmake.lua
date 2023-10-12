@@ -1,13 +1,13 @@
 set_project("luac")
-set_xmakever("2.6.3")
+set_xmakever("2.8.3")
 
 set_version("1.0.3", {build = "%Y%m%d%H%M"})
 add_rules("mode.debug", "mode.release")
 
 local luatos = "../LuatOS/"
 
+add_requires("libuv v1.46.0")
 add_packages("libuv")
-add_requires("libuv")
 
 -- set warning all as error
 set_warnings("allextra")
@@ -21,6 +21,9 @@ add_defines("MBEDTLS_CONFIG_FILE=\"mbedtls_config_mini.h\"")
 if os.getenv("VM_64bit") == "1" then
     add_defines("LUAT_CONF_VM_64bit")
 end
+
+-- add_requires("libsdl")
+-- add_packages("libsdl")
 
 if is_host("windows") then
     -- add_defines("LUA_USE_WINDOWS")
@@ -37,6 +40,7 @@ end
 add_includedirs("include",{public = true})
 add_includedirs(luatos.."lua/include",{public = true})
 add_includedirs(luatos.."luat/include",{public = true})
+-- add_includedirs("libuv/include",{public = true})
 
 
 target("luatos-lua")
@@ -67,6 +71,7 @@ target("luatos-lua")
             ,luatos.."luat/modules/luat_lib_zbuff.c"
             ,luatos.."luat/modules/luat_lib_pack.c"
             ,luatos.."luat/modules/luat_lib_crypto.c"
+            ,luatos.."luat/modules/luat_lib_mcu.c"
             )
 
     add_files(luatos.."luat/vfs/*.c")
