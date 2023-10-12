@@ -546,6 +546,12 @@ static int libuv_socket_receive(int socket_id, uint64_t tag, uint8_t *buf, uint3
             len = sockets[socket_id].udp_data->len;
         }
         memcpy(buf, sockets[socket_id].udp_data->data, len);
+        if (remote_ip) {
+            remote_ip->is_ipv6 = 0;
+            remote_ip->ipv4 = sockets[socket_id].udp_data->from.sin_addr.s_addr;
+        }
+        if (remote_port)
+            *remote_port = ntohs(sockets[socket_id].udp_data->from.sin_port);
         sockets[socket_id].udp_data = sockets[socket_id].udp_data->next;
     }
     // LLOGD("返回数据长度 %d", len);
