@@ -9,6 +9,10 @@ local luatos = "../LuatOS/"
 add_requires("libuv v1.46.0")
 add_packages("libuv")
 
+
+add_requires("gmssl")
+add_packages("gmssl")
+
 -- set warning all as error
 set_warnings("allextra")
 set_optimize("fastest")
@@ -109,7 +113,7 @@ target("luatos-lua")
     -- gmssl
     -- add_includedirs(luatos.."components/gmssl/include")
     -- add_files(luatos.."components/gmssl/src/**.c")
-    -- add_files(luatos.."components/gmssl/bind/*.c")
+    add_files(luatos.."components/gmssl/bind/*.c")
 
     -- iconv
     add_includedirs(luatos.."components/iconv")

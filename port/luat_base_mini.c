@@ -33,7 +33,7 @@ static const luaL_Reg loadedlibs[] = {
   {"protobuf", luaopen_protobuf},
   {"iotauth", luaopen_iotauth},
   {"iconv", luaopen_iconv},
-  // {"gmssl", luaopen_gmssl},
+  {"gmssl", luaopen_gmssl},
 #ifdef LUAT_USE_NETWORK
   {"socket", luaopen_socket_adapter},
   {"http", luaopen_http},
