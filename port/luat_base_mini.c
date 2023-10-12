@@ -29,11 +29,36 @@ static const luaL_Reg loadedlibs[] = {
   {"json", luaopen_cjson},             // json
   {"zbuff", luaopen_zbuff},            // 
   {"crypto", luaopen_crypto},
+#ifdef LUAT_USE_RSA
   {"rsa", luaopen_rsa},
+#endif
+#ifdef LUAT_USE_MINIZ
+  {"miniz", luaopen_miniz},
+#endif
+#ifdef LUAT_USE_PROTOBUF
   {"protobuf", luaopen_protobuf},
+#endif
+#ifdef LUAT_USE_IOTAUTH
   {"iotauth", luaopen_iotauth},
+#endif
+#ifdef LUAT_USE_ICONV
   {"iconv", luaopen_iconv},
+#endif
+#ifdef LUAT_USE_BIT64
+  {"bit64", luaopen_bit64},
+#endif
+#ifdef LUAT_USE_GMSSL
   {"gmssl", luaopen_gmssl},
+#endif
+#ifdef LUAT_USE_MCU
+  {"mcu",   luaopen_mcu},
+#endif
+#ifdef LUAT_USE_LIBGNSS
+  {"libgnss", luaopen_libgnss},           // 处理GNSS定位数据
+#endif
+#ifdef LUAT_USE_FS
+  {"fs",      luaopen_fs},                // 文件系统库,在io库之外再提供一些方法
+#endif
 #ifdef LUAT_USE_NETWORK
   {"socket", luaopen_socket_adapter},
   {"http", luaopen_http},

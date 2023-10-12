@@ -76,16 +76,17 @@ target("luatos-lua")
             ,luatos.."luat/modules/luat_lib_pack.c"
             ,luatos.."luat/modules/luat_lib_crypto.c"
             ,luatos.."luat/modules/luat_lib_mcu.c"
+            ,luatos.."luat/modules/luat_lib_bit64.c"
             )
 
     add_files(luatos.."luat/vfs/*.c")
-    remove_files(luatos .. "luat/vfs/luat_fs_lfs2.c")
-    remove_files(luatos .. "luat/vfs/luat_fs_luadb.c")
+    -- remove_files(luatos .. "luat/vfs/luat_fs_lfs2.c")
+    -- remove_files(luatos .. "luat/vfs/luat_fs_luadb.c")
     remove_files(luatos .. "luat/vfs/luat_fs_fatfs.c")
     remove_files(luatos .. "luat/vfs/luat_fs_onefile.c")
     -- lfs
-    -- add_includedirs(luatos.."components/lfs")
-    -- add_files(luatos.."components/lfs/*.c")
+    add_includedirs(luatos.."components/lfs")
+    add_files(luatos.."components/lfs/*.c")
 
     -- add_files(luatos.."components/sfd/*.c")
     -- lua-cjson
@@ -118,6 +119,10 @@ target("luatos-lua")
     -- iconv
     add_includedirs(luatos.."components/iconv")
     add_files(luatos.."components/iconv/*.c")
+
+    -- miniz
+    add_files(luatos .. "components/miniz/*.c")
+    add_includedirs(luatos .. "components/miniz")
 
     -- c_common
     add_includedirs(luatos.."components/common",{public = true})
