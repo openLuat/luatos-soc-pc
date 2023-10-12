@@ -16,6 +16,15 @@
 
 #define MAX_SOCK_NUM 8
 
+#ifndef LUAT_NETWORK_DEBUG
+#define LUAT_NETWORK_DEBUG 1
+#endif
+
+#if (LUAT_NETWORK_DEBUG == 0)
+#undef LLOGD
+#define LLOGD(...)
+#endif
+
 enum
 {
     EV_LIBUV_EVENT_START = USER_EVENT_ID_START + 0x2000000,
@@ -48,7 +57,7 @@ typedef struct
     // uint32_t socket_connect;
     // uint8_t dns_adapter_index;
     // uint8_t network_ready;
-    // uint8_t next_socket_index;
+    uint8_t next_socket_index;
 } libuv_ctrl_c;
 
 typedef struct uv_dns_query
@@ -147,6 +156,7 @@ static int libuv_create_socket(uint8_t is_tcp, uint64_t *tag, void *param, uint8
     socket_tag_counter++;
     for (size_t i = 0; i < MAX_SOCK_NUM; i++)
     {
+        i = (i + ctrl.next_socket_index) % 8;
         if (sockets[i].tag == 0)
         {
             if (is_tcp)
@@ -159,6 +169,7 @@ static int libuv_create_socket(uint8_t is_tcp, uint64_t *tag, void *param, uint8
             sockets[i].is_tcp = is_tcp;
             sockets[i].is_ipv6 = is_ipv6;
             sockets[i].is_closed = 0;
+            ctrl.next_socket_index = i + 1;
             return i;
         }
     }
@@ -178,7 +189,7 @@ static void on_recv(uv_stream_t *tcp,
                     const uv_buf_t *buf)
 {
     int32_t socket_id = (int32_t)tcp->data;
-    // LLOGD("on_recv %d %d", socket_id, nread);
+    LLOGD("on_recv %d %d", socket_id, nread);
     if (sockets[socket_id].is_closed) {
         luat_heap_free(buf->base);
         return;
@@ -236,7 +247,7 @@ static void on_recv_udp(uv_udp_t *udp,
                         const struct sockaddr *addr,
                         unsigned flags)
 {
-    // LLOGD("UDP接收回调 %d", nread);
+    LLOGD("UDP接收回调 %d", nread);
     int32_t socket_id = (int32_t)udp->data;
     if (nread < 0)
     {
@@ -355,13 +366,13 @@ static int libuv_socket_connect(int socket_id, uint64_t tag, uint16_t local_port
     saddr.sin_port = htons(remote_port);
     char addr[17] = {'\0'};
     uv_ip4_name(&saddr, addr, 16);
-    LLOGD("connect to %s:%d %s", addr, remote_port, sockets[socket_id].is_tcp ? "TCP" : "UDP");
+    LLOGI("connect to %s:%d %s", addr, remote_port, sockets[socket_id].is_tcp ? "TCP" : "UDP");
     sockets[socket_id].c.data = (void *)socket_id;
     if (sockets[socket_id].is_tcp)
     {
         ret = uv_tcp_connect(&sockets[socket_id].c, &sockets[socket_id].tcp, (const struct sockaddr *)&saddr, on_connect);
         if (ret)
-            LLOGD("uv_tcp_connect ret %d", ret);
+            LLOGE("uv_tcp_connect ret %d", ret);
     }
     else
     {
@@ -387,13 +398,13 @@ static int libuv_socket_connect(int socket_id, uint64_t tag, uint16_t local_port
 // 作为server绑定一个port，开始监听
 static int libuv_socket_listen(int socket_id, uint64_t tag, uint16_t local_port, void *user_data)
 {
-    LLOGD("执行listen, 未支持");
+    LLOGI("执行listen, 未支持");
     return -1;
 }
 // 作为server接受一个client
 static int libuv_socket_accept(int socket_id, uint64_t tag, luat_ip_addr_t *remote_ip, uint16_t *remote_port, void *user_data)
 {
-    LLOGD("执行accept, 未支持");
+    LLOGI("执行accept, 未支持");
     return -1;
 }
 
@@ -407,7 +418,7 @@ static void on_close(uv_handle_t *handle)
     }
     if (sockets[socket_id].tag == 0 || sockets[socket_id].is_closed)
     {
-        LLOGD("已经关闭过了 %d", socket_id);
+        LLOGI("已经关闭过了 %d", socket_id);
         return;
     }
     sockets[socket_id].is_closed = 1;
@@ -424,16 +435,22 @@ static void on_shutdown(uv_shutdown_t *handle)
         luat_heap_free(handle);
         return;
     }
-    if (sockets[socket_id].tag == 0)
+    if (sockets[socket_id].tag == 0 || sockets[socket_id].is_closed)
     {
         luat_heap_free(handle);
-        LLOGD("已经关闭过了 %d", socket_id);
+        LLOGI("已经关闭过了 %d", socket_id);
         return;
     }
     sockets[socket_id].is_closed = 1;
     cb_to_nw_task(EV_NW_SOCKET_CLOSE_OK, socket_id, 0, sockets[socket_id].param);
     sockets[socket_id].tag = 0;
     luat_heap_free(handle);
+}
+
+static void udp_async_close(uv_async_t *handle) {
+    int socket_id = (int)handle->data;
+    luat_heap_free(handle);
+    on_close(&sockets[socket_id].udp);
 }
 
 static int close_socket(int socket_id, const char* tag) {
@@ -443,14 +460,15 @@ static int close_socket(int socket_id, const char* tag) {
         shutdown->data = (void*)socket_id;
         ret = uv_shutdown(shutdown, &sockets[socket_id].tcp, on_shutdown);
         if (ret)
-            LLOGD("%s uv_shutdown %d %s", tag, ret, uv_err_name(ret));
+            LLOGI("%s uv_shutdown %d %s", tag, ret, uv_err_name(ret));
     }
     else {
         ret = uv_udp_recv_stop(&sockets[socket_id].udp);
         if (ret)
-            LLOGD("%s uv_udp_recv_stop %d %s", tag, ret, uv_err_name(ret));
-        // TODO 感觉这里会有问题
-        on_close(&sockets[socket_id].udp);
+            LLOGI("%s uv_udp_recv_stop %d %s", tag, ret, uv_err_name(ret));
+        uv_async_t* async = luat_heap_malloc(sizeof(uv_async_t));
+        async->data = (void*)socket_id;
+        uv_async_send(async);
     }
     return ret;
 }
@@ -499,7 +517,7 @@ static int libuv_socket_receive(int socket_id, uint64_t tag, uint8_t *buf, uint3
 {
     CHECK_SOCKET_ID
 
-    // LLOGD("socket_receive %d %p %d", socket_id, buf, len);
+    LLOGD("socket_receive %d %p %d", socket_id, buf, len);
     if (sockets[socket_id].is_tcp)
     {
         if (buf == NULL)
@@ -509,7 +527,7 @@ static int libuv_socket_receive(int socket_id, uint64_t tag, uint8_t *buf, uint3
 
         if (sockets[socket_id].recv_size == 0 && len > 0)
         {
-            // LLOGD("需要等待更多数据 expect %d but %d", len, sockets[socket_id].recv_size);
+            LLOGD("需要等待更多数据 expect %d but %d", len, sockets[socket_id].recv_size);
             return 0;
         }
         if (len > sockets[socket_id].recv_size)
@@ -554,7 +572,7 @@ static int libuv_socket_receive(int socket_id, uint64_t tag, uint8_t *buf, uint3
             *remote_port = ntohs(sockets[socket_id].udp_data->from.sin_port);
         sockets[socket_id].udp_data = sockets[socket_id].udp_data->next;
     }
-    // LLOGD("返回数据长度 %d", len);
+    LLOGD("返回数据长度 %d", len);
     return len;
 }
 
@@ -565,7 +583,7 @@ static void on_sent(uv_write_t *req, int status)
     uint32_t len = 0;
     memcpy(&len, tmp, 4);
     int socket_id = (int32_t)req->data;
-    // LLOGD("socket_id sent %d %d %d", socket_id, status, len);
+    LLOGD("socket tcp sent %d %d %d", socket_id, status, len);
 
     if (status == 0)
     {
@@ -587,7 +605,7 @@ static void on_sent_udp(uv_udp_send_t *req, int status)
     uint32_t len = 0;
     memcpy(&len, tmp, 4);
     int socket_id = (int32_t)req->data;
-    // LLOGD("socket_id sent %d %d %d", socket_id, status, len);
+    LLOGD("socket udp sent %d %d %d", socket_id, status, len);
 
     if (status == 0)
     {
@@ -634,7 +652,7 @@ static int libuv_socket_send(int socket_id, uint64_t tag, const uint8_t *buf, ui
         req->data = (void *)socket_id;
         ret = uv_write(req, (uv_stream_t *)&sockets[socket_id].tcp, &buff, 1, on_sent);
         if (ret)
-            LLOGD("uv_write %d", ret);
+            LLOGI("uv_write %d", ret);
     }
     else
     {
@@ -652,7 +670,7 @@ static int libuv_socket_send(int socket_id, uint64_t tag, const uint8_t *buf, ui
         // LLOGD("UDP发送 %s:%d", addr, remote_port);
         ret = uv_udp_send(send_req, &sockets[socket_id].udp, &buff, 1, (const struct sockaddr *)&send_addr, on_sent_udp);
         if (ret)
-            LLOGD("uv_udp_send %d %s", ret, uv_err_name(ret));
+            LLOGI("uv_udp_send %d %s", ret, uv_err_name(ret));
     }
 
     if (ret)
@@ -767,7 +785,7 @@ static int libuv_dns(const char *domain_name, uint32_t len, void *param, void *u
 
     if (r != 0)
     {
-        LLOGD("uv_getaddrinfo %d", r);
+        LLOGI("uv_getaddrinfo %d", r);
         luat_heap_free(query);
         cb_to_nw_task(EV_NW_DNS_RESULT, 0, 0, param);
     }
@@ -786,15 +804,18 @@ static int libuv_dns_ipv6(const char *domain_name, uint32_t len, void *param, vo
 
 static int libuv_set_dns_server(uint8_t server_index, luat_ip_addr_t *ip, void *user_data)
 {
+    LLOGI("当前不支持设置dns server");
     return 0;
 }
 
 static int libuv_set_mac(uint8_t *mac, void *user_data)
 {
-    return -1;
+    LLOGI("当前不支持设置mac");
+    return 0;
 }
 int libuv_set_static_ip(luat_ip_addr_t *ip, luat_ip_addr_t *submask, luat_ip_addr_t *gateway, luat_ip_addr_t *ipv6, void *user_data)
 {
+    LLOGI("当前不支持设置静态IP");
     return 0;
 }
 
