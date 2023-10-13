@@ -7,6 +7,8 @@
 #include "luat_fs.h"
 #include <stdlib.h>
 
+#include "luat_pcconf.h"
+
 #include "bget.h"
 
 #define LUAT_LOG_TAG "main"
@@ -42,6 +44,8 @@ int main(int argc, char** argv) {
     uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
     main_loop = malloc(sizeof(uv_loop_t));
     uv_loop_init(main_loop);
+
+    luat_pcconf_init();
 
     luat_log_init_win32();
     bpool(luavm_heap, LUAT_HEAP_SIZE);

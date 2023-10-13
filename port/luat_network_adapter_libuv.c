@@ -874,7 +874,43 @@ static const network_adapter_info prv_libuv_adapter =
         .is_posix = 0,
 };
 
+static int l_ip_ready(lua_State *L, void* ptr) {
+	(void)ptr;
+	rtos_msg_t* msg = (rtos_msg_t*)lua_topointer(L, -1);
+	lua_getglobal(L, "sys_pub");
+    if (!lua_isfunction(L, -1)) {
+        return 0;
+    }
+	if (msg->arg1) {
+		lua_pushliteral(L, "IP_READY");
+		uint32_t ip = msg->arg2;
+		lua_pushfstring(L, "%d.%d.%d.%d", (ip) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
+		lua_pushinteger(L, NW_ADAPTER_INDEX_ETH0);
+		lua_call(L, 3, 0);
+	}
+    else {
+		lua_pushliteral(L, "IP_LOSE");
+		lua_pushinteger(L, NW_ADAPTER_INDEX_ETH0);
+		lua_call(L, 2, 0);
+	}
+    return 0;
+}
+
+static void ip_ready_timer_cb(uv_timer_t *t) {
+    rtos_msg_t msg = {0};
+    msg.handler = l_ip_ready;
+    msg.arg1 = 1;
+    luat_msgbus_put(&msg, 0);
+}
+
 void luat_network_init(void)
 {
     network_register_adapter(NW_ADAPTER_INDEX_ETH0, &prv_libuv_adapter, NULL);
+
+    // 延时500ms后发布联网成功的消息
+
+    uv_timer_t *t = luat_heap_malloc(sizeof(uv_timer_t));
+    memset(t, 0, sizeof(uv_timer_t));
+    uv_timer_init(main_loop, t);
+    uv_timer_start(t, ip_ready_timer_cb, 500, 0);
 }

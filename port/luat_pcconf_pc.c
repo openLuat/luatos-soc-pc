@@ -14,10 +14,11 @@
 luat_pcconf_t g_pcconf;
 
 void luat_pcconf_init(void) {
-
+    memcpy(g_pcconf.mcu_unique_id, "LuatOS@PC", strlen("LuatOS@PC"));
+    g_pcconf.mcu_unique_id_len = strlen("LuatOS@PC");
 }
 
 void luat_pcconf_save(void) {
-    
+
 }
 
