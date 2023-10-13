@@ -57,6 +57,7 @@ int main(int argc, char** argv) {
 #else
     cmdline_argc = argc;
     cmdline_argv = argv;
+    #if 0
     if (cmdline_argc > 1) {
         size_t len = strlen(cmdline_argv[1]);
         if (cmdline_argv[1][0] != '-') {
@@ -66,6 +67,7 @@ int main(int argc, char** argv) {
             }
         }
     }
+    #endif
 
     uv_thread_t l_main;
     uv_idle_t idle;
