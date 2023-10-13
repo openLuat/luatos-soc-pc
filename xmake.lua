@@ -77,6 +77,10 @@ target("luatos-lua")
             ,luatos.."luat/modules/luat_lib_crypto.c"
             ,luatos.."luat/modules/luat_lib_mcu.c"
             ,luatos.."luat/modules/luat_lib_bit64.c"
+            ,luatos.."luat/modules/luat_lib_uart.c"
+            ,luatos.."luat/modules/luat_lib_mqttcore.c"
+            ,luatos.."luat/modules/luat_lib_libcoap.c"
+            ,luatos.."luat/modules/luat_lib_rtc.c"
             )
 
     add_files(luatos.."luat/vfs/*.c")
@@ -106,8 +110,8 @@ target("luatos-lua")
     add_includedirs(luatos.."components/serialization/protobuf")
     add_files(luatos.."components/serialization/protobuf/*.c")
     -- libgnss
-    -- add_includedirs(luatos.."components/minmea")
-    -- add_files(luatos.."components/minmea/*.c")
+    add_includedirs(luatos.."components/minmea")
+    add_files(luatos.."components/minmea/*.c")
     -- rsa
     add_files(luatos.."components/rsa/**.c")
 
@@ -127,6 +131,10 @@ target("luatos-lua")
     -- fskv
     add_includedirs(luatos.."components/fskv")
     add_files(luatos.."components/fskv/luat_lib_fskv.c")
+
+    -- ymodem
+    add_includedirs(luatos.."components/ymodem",{public = true})
+    add_files(luatos.."components/ymodem/*.c")
 
     -- c_common
     add_includedirs(luatos.."components/common",{public = true})

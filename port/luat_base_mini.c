@@ -22,6 +22,41 @@ static const luaL_Reg loadedlibs[] = {
 #if defined(LUA_COMPAT_BITLIB)
   {LUA_BITLIBNAME, luaopen_bit32},    // 不太可能启用
 #endif
+// 外设类
+#ifdef LUAT_USE_UART
+  {"uart",    luaopen_uart},              // 串口操作
+#endif
+#ifdef LUAT_USE_GPIO
+  {"gpio",    luaopen_gpio},              // GPIO脚的操作
+#endif
+#ifdef LUAT_USE_I2C
+  {"i2c",     luaopen_i2c},               // I2C操作
+#endif
+#ifdef LUAT_USE_SPI
+  {"spi",     luaopen_spi},               // SPI操作
+#endif
+#ifdef LUAT_USE_ADC
+  {"adc",     luaopen_adc},               // ADC模块
+#endif
+#ifdef LUAT_USE_PWM
+  {"pwm",     luaopen_pwm},               // PWM模块
+#endif
+#ifdef LUAT_USE_WDT
+  {"wdt",     luaopen_wdt},               // watchdog模块
+#endif
+#ifdef LUAT_USE_PM
+  {"pm",      luaopen_pm},                // 电源管理模块
+#endif
+#ifdef LUAT_USE_MCU
+  {"mcu",     luaopen_mcu},               // MCU特有的一些操作
+#endif
+#ifdef LUAT_USE_RTC
+  {"rtc", luaopen_rtc},                   // 实时时钟
+#endif
+#ifdef LUAT_USE_OTP
+  {"otp", luaopen_otp},                   // OTP
+#endif
+//-----------------------------------------------------------------
   {"rtos", luaopen_rtos},             // rtos底层库, 核心功能是队列和定时器
   {"log", luaopen_log},               // 日志库
   {"timer", luaopen_timer},           // 延时库
@@ -61,6 +96,15 @@ static const luaL_Reg loadedlibs[] = {
 #endif
 #ifdef LUAT_USE_FSKV
   {"fskv",      luaopen_fskv},
+#endif
+#ifdef LUAT_USE_MQTTCORE
+  {"mqttcore",luaopen_mqttcore},          // MQTT 协议封装
+#endif
+#ifdef LUAT_USE_LIBCOAP
+  {"libcoap", luaopen_libcoap},           // 处理COAP消息
+#endif
+#ifdef LUAT_USE_YMODEM
+  {"ymodem", luaopen_ymodem},
 #endif
 #ifdef LUAT_USE_NETWORK
   {"socket", luaopen_socket_adapter},
@@ -106,7 +150,4 @@ void luat_ota_reboot(int timeout_ms) {
   if (timeout_ms > 0)
     luat_timer_mdelay(timeout_ms);
   exit(0);
-}
-void luat_rtc_set_tamp32(uint32_t tamp) {
-  LLOGE("暂不支持设置时间戳");
 }
