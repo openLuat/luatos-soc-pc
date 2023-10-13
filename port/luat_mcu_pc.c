@@ -6,23 +6,25 @@
 #include "luat_malloc.h"
 #include "luat_mcu.h"
 
+#include "luat_pcconf.h"
+
 #define LUAT_LOG_TAG "mcu"
 #include "luat_log.h"
 
-
+extern luat_pcconf_t g_pcconf;
 
 int luat_mcu_set_clk(size_t mhz) {
     return 0;
 }
 int luat_mcu_get_clk(void) {
-    return 1024;
+    return g_pcconf.mcu_mhz;
 }
 
-char mcu_unique_id[] = "";
 extern uv_timespec64_t boot_ts;
 
 const char* luat_mcu_unique_id(size_t* t) {
-    return (const char*)mcu_unique_id;
+    *t = g_pcconf.mcu_unique_id_len;
+    return (const char*)g_pcconf.mcu_unique_id;
 }
 
 long luat_mcu_ticks(void) {

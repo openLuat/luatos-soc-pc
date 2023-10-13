@@ -93,8 +93,8 @@ target("luatos-lua")
     add_includedirs(luatos.."components/lua-cjson")
     add_files(luatos.."components/lua-cjson/*.c")
     -- cjson
-    -- add_includedirs(luatos.."components/cjson")
-    -- add_files(luatos.."components/cjson/*.c")
+    add_includedirs(luatos.."components/cjson")
+    add_files(luatos.."components/cjson/*.c")
     -- mbedtls
     add_files(luatos.."components/mbedtls/library/*.c")
     add_includedirs(luatos.."components/mbedtls/include")
