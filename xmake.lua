@@ -81,6 +81,7 @@ target("luatos-lua")
             ,luatos.."luat/modules/luat_lib_mqttcore.c"
             ,luatos.."luat/modules/luat_lib_libcoap.c"
             ,luatos.."luat/modules/luat_lib_rtc.c"
+            ,luatos.."luat/modules/luat_lib_gpio.c"
             )
 
     add_files(luatos.."luat/vfs/*.c")
