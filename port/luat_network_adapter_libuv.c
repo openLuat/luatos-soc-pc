@@ -176,7 +176,8 @@ static int libuv_create_socket(uint8_t is_tcp, uint64_t *tag, void *param, uint8
     LLOGE("too many socket created");
     return -1;
 }
-static void buf_alloc(uv_handle_t *tcp, size_t size, uv_buf_t *buf)
+
+void uv_buf_alloc(uv_handle_t *tcp, size_t size, uv_buf_t *buf)
 {
     // LLOGD("buf_alloc %d", size);
     void *ptr = luat_heap_malloc(size);
@@ -318,13 +319,13 @@ static void on_connect(uv_connect_t *req, int status)
         // LLOGD("启动接收回调");
         if (sockets[socket_id].is_tcp)
         {
-            ret = uv_read_start(&sockets[socket_id].tcp, buf_alloc, on_recv);
+            ret = uv_read_start(&sockets[socket_id].tcp, uv_buf_alloc, on_recv);
             if (ret) // TODO 中止连接
                 LLOGD("uv_read_start %d", ret);
         }
         else
         {
-            ret = uv_udp_recv_start(&sockets[socket_id].udp, buf_alloc, on_recv_udp);
+            ret = uv_udp_recv_start(&sockets[socket_id].udp, uv_buf_alloc, on_recv_udp);
             if (ret) // TODO 中止连接
                 LLOGD("uv_read_start %d", ret);
         }

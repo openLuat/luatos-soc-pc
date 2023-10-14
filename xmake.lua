@@ -53,7 +53,7 @@ target("luatos-lua")
     set_targetdir("$(buildir)/out")
 
     add_files("src/*.c",{public = true})
-    add_files("port/*.c")
+    add_files("port/**.c")
 
     add_files(luatos.."lua/src/*.c")
     -- printf
@@ -135,6 +135,10 @@ target("luatos-lua")
     -- ymodem
     add_includedirs(luatos.."components/ymodem",{public = true})
     add_files(luatos.."components/ymodem/*.c")
+
+    -- profiler
+    add_includedirs(luatos.."components/mempool/profiler/include",{public = true})
+    add_files(luatos.."components/mempool/profiler/**.c")
 
     -- c_common
     add_includedirs(luatos.."components/common",{public = true})

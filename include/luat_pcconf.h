@@ -15,6 +15,11 @@ typedef struct luat_pcconf
     char mobile_iccid[20];
     char mobile_iccid2[20];
     int  mobile_csq;
+
+    // uart udp
+    size_t uart_udp_port_start;
+    size_t uart_udp_id_start;
+    size_t uart_udp_id_count;
 }luat_pcconf_t;
 
 void luat_pcconf_init(void);

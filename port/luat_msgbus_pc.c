@@ -29,7 +29,7 @@ uint32_t luat_msgbus_put(rtos_msg_t* msg, size_t timeout) {
     uv_queue_item_t *item = luat_heap_malloc(sizeof(uv_queue_item_t));
     if (item == NULL) {
         LLOGE("out of memory when malloc uv_queue_item_t");
-        return -1;
+        return 1;
     }
     memset(item, 0, sizeof(uv_queue_item_t));
     memcpy(&item->msg, msg, sizeof(rtos_msg_t));
@@ -47,12 +47,12 @@ uint32_t luat_msgbus_put(rtos_msg_t* msg, size_t timeout) {
     return 0;
 }
 uint32_t luat_msgbus_get(rtos_msg_t* msg, size_t timeout) {
-    // LLOGD("luat_msgbus_get");
+    LLOGD("luat_msgbus_get %d", timeout);
     uv_queue_item_t* q = &head;
-    if (timeout > 0) {
+    if (timeout > 0 && timeout != (size_t)(-1)) {
         while (timeout >0) {
             if (head.next == NULL) {
-                uv_sleep(1);
+                uv_sleep(2);
                 timeout --;
                 continue;
             }
@@ -73,7 +73,7 @@ uint32_t luat_msgbus_get(rtos_msg_t* msg, size_t timeout) {
     else {
         while (1) {
             if (head.next == NULL) {
-                uv_sleep(1);
+                uv_sleep(2);
                 continue;
             }
             uv_mutex_lock(&m);
@@ -97,5 +97,6 @@ uint32_t luat_msgbus_freesize(void) {
 }
 
 uint8_t luat_msgbus_is_empty(void) {
-    return head.next == NULL ? 1 : 0;
+    // return head.next == NULL ? 1 : 0;
+    return 0;
 }
