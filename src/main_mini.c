@@ -35,8 +35,8 @@ void uv_luat_main(void* args) {
     lua_main(cmdline_argc, cmdline_argv);
 }
 
-static void _idle(uv_idle_t* handle) {
-
+static void timer_nop(uv_timer_t *handle) {
+    // 不需要操作东西
 }
 
 // boot
@@ -70,16 +70,16 @@ int main(int argc, char** argv) {
     #endif
 
     uv_thread_t l_main;
-    // uv_idle_t idle;
-    // uv_idle_init(main_loop, &idle);
-    // uv_idle_start(&idle, _idle);
+    uv_timer_t t;
+    uv_timer_init(main_loop, &t);
+    uv_timer_start(&t, timer_nop, 1000, 1000);
     uv_thread_create(&l_main, uv_luat_main, NULL);
 
     // uv_thread_join(&l_main);
     uv_run(main_loop, UV_RUN_DEFAULT);
 
-    // uv_loop_close(main_loop);
-    // free(main_loop);
+    uv_loop_close(main_loop);
+    free(main_loop);
     LLOGD("uv_run is done");
 #endif
     return 0;
