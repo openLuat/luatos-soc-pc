@@ -27,36 +27,27 @@
 
 enum
 {
-    EV_LIBUV_EVENT_START = USER_EVENT_ID_START + 0x2000000,
-    EV_LIBUV_SOCKET_TX,
-    EV_LIBUV_NETIF_INPUT,
-    EV_LIBUV_TCP_TIMER,
-    EV_LIBUV_COMMON_TIMER,
-    EV_LIBUV_SOCKET_RX_DONE,
-    EV_LIBUV_SOCKET_CREATE,
-    EV_LIBUV_SOCKET_CONNECT,
-    EV_LIBUV_SOCKET_DNS,
-    EV_LIBUV_SOCKET_DNS_IPV6,
-    EV_LIBUV_SOCKET_LISTEN,
-    EV_LIBUV_SOCKET_ACCPET,
-    EV_LIBUV_SOCKET_CLOSE,
-    EV_LIBUV_NETIF_LINK_STATE,
-    EV_LIBUV_DHCP_TIMER,
-    EV_LIBUV_FAST_TIMER,
-    EV_LIBUV_NETIF_SET_IP,
-    EV_LIBUV_NETIF_IPV6_BY_MAC,
+    IDLE,
+    USED,
+    CONNECTING,
+    CONNECTED,
+    CLOSING,
+    CLOSED
+};
+
+static const char* state_strs[] = {
+    "空闲",
+    "已占用",
+    "连接中",
+    "已连接",
+    "关闭中",
+    "已关闭"
 };
 
 typedef struct
 {
-    // uint64_t socket_tag;
-    // socket_ctrl_t socket[MAX_SOCK_NUM];
     CBFuncEx_t socket_cb;
     void *user_data;
-    // uint32_t socket_busy;
-    // uint32_t socket_connect;
-    // uint8_t dns_adapter_index;
-    // uint8_t network_ready;
     uint8_t next_socket_index;
 } libuv_ctrl_c;
 
@@ -79,6 +70,7 @@ typedef struct uv_udp_data
 
 typedef struct uv_conn
 {
+    int state;
     uint64_t tag;
     uv_connect_t c;
     uv_tcp_t tcp;
@@ -90,7 +82,6 @@ typedef struct uv_conn
     // struct sockaddr_in remote;
     uint8_t is_ipv6;
     uint8_t is_tcp;
-    uint8_t is_closed;
 } uv_conn_t;
 
 int libuv_init(uint8_t adapter_index);
@@ -119,10 +110,27 @@ extern uv_loop_t *main_loop;
 static uv_conn_t sockets[MAX_SOCK_NUM];
 static uint64_t socket_tag_counter = 0xFAFB;
 
+static const char* socket_state_str(int state) {
+    if (state >= 0 && state <= CLOSED) {
+        return state_strs[state];
+    }
+    return "";
+}
+
+static inline int set_socket_state(int socket_id, int state) {
+    if (socket_id < 0 || socket_id >= MAX_SOCK_NUM) {
+        return 0;
+    }
+    LLOGD("socket[%d]状态变化 %s --> %s", socket_id, socket_state_str(sockets[socket_id].state), socket_state_str(state));
+    sockets[socket_id].state = state;
+    return 0;
+}
+
 static void cb_to_nw_task(uint32_t event_id, uint32_t param1, uint32_t param2, uint32_t param3)
 {
     luat_network_cb_param_t param = {.tag = 0, .param = NULL};
     OS_EVENT event = {.ID = event_id, .Param1 = param1, .Param2 = param2, .Param3 = param3};
+    // LLOGD("发送nw_task消息 %08X %s", event_id, network_ctrl_state_string(event_id));
     if ((event_id > EV_NW_DNS_RESULT))
     {
         event.Param3 = sockets[param1].param;
@@ -157,18 +165,23 @@ static int libuv_create_socket(uint8_t is_tcp, uint64_t *tag, void *param, uint8
     for (size_t i = 0; i < MAX_SOCK_NUM; i++)
     {
         i = (i + ctrl.next_socket_index) % 8;
-        if (sockets[i].tag == 0)
+        if (sockets[i].tag == 0 && (sockets[i].state == IDLE || sockets[i].state == CLOSED))
         {
-            if (is_tcp)
+            if (is_tcp) {
                 uv_tcp_init(main_loop, &sockets[i].tcp);
-            else
+                sockets[i].tcp.data = (void*)i;
+            }
+            else {
                 uv_udp_init(main_loop, &sockets[i].udp);
+                sockets[i].udp.data = (void*)i;
+            }
             *tag = stag;
             sockets[i].tag = stag;
             sockets[i].param = param;
             sockets[i].is_tcp = is_tcp;
             sockets[i].is_ipv6 = is_ipv6;
-            sockets[i].is_closed = 0;
+            // sockets[i].state = IDLE;
+            set_socket_state(i, USED);
             ctrl.next_socket_index = i + 1;
             return i;
         }
@@ -191,55 +204,65 @@ static void on_recv(uv_stream_t *tcp,
 {
     int32_t socket_id = (int32_t)tcp->data;
     LLOGD("on_recv %d %d", socket_id, nread);
-    if (sockets[socket_id].is_closed) {
-        luat_heap_free(buf->base);
-        return;
-    }
+    // if (sockets[socket_id].state == CLOSED)
+    // {
+    //     luat_heap_free(buf->base);
+    //     return;
+    // }
     if (nread < 0)
     {
+        // LLOGD("on_recv %d %s", nread, uv_err_name(nread));
         luat_heap_free(buf->base);
-        if (nread != UV_EOF)
+        if (nread == UV_EOF)
         {
-            LLOGD("服务器断开了连接");
-            uv_close(tcp, on_close);
-            // cb_to_nw_task(EV_NW_SOCKET_REMOTE_CLOSE, socket_id, 0, sockets[socket_id].param);
+            LLOGD("服务器断开了连接 %d %s", socket_id, socket_state_str(sockets[socket_id].state));
+            if (sockets[socket_id].state != CLOSING && sockets[socket_id].state != CLOSED) {
+                sockets[socket_id].state = CLOSING;
+                // LLOGD("发送EV_NW_SOCKET_REMOTE_CLOSE消息");
+                cb_to_nw_task(EV_NW_SOCKET_REMOTE_CLOSE, socket_id, 0, sockets[socket_id].param);
+            }
         }
         else
         {
-            LLOGD("socket read出错, 被其他原因中断了?");
+            LLOGD("on_recv 出错 %d %d %s", socket_id, nread, uv_err_name(nread));
             // uv_shutdown()
+            sockets[socket_id].state = CLOSING;
+            uv_close(tcp, on_close);
+            LLOGD("发送EV_NW_SOCKET_ERROR消息");
             cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, sockets[socket_id].param);
         }
         // uv_close((uv_handle_t*) tcp, NULL);
         return;
     }
-    else if (nread > 0)
+    if (nread == 0)
     {
-        // LLOGD("on_recv 待读取数据长度 %d", nread);
-        // LLOGD("待读取内容 %.*s", nread, buf->base);
-        if (sockets[socket_id].recv_buff == NULL)
-        {
-            sockets[socket_id].recv_buff = luat_heap_malloc(nread);
-            sockets[socket_id].recv_size = nread;
-            memcpy(sockets[socket_id].recv_buff, buf->base, nread);
-        }
-        else
-        {
-            void *ptr = luat_heap_realloc(sockets[socket_id].recv_buff, sockets[socket_id].recv_size + nread);
-            if (ptr == NULL)
-            {
-                LLOGD("内存不足, 无法存放更多接收到的数据");
-                cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, sockets[socket_id].param);
-                return;
-            }
-            sockets[socket_id].recv_buff = ptr;
-            memcpy(sockets[socket_id].recv_buff + sockets[socket_id].recv_size, buf->base, nread);
-            sockets[socket_id].recv_size += nread;
-        }
         luat_heap_free(buf->base);
-        cb_to_nw_task(EV_NW_SOCKET_RX_NEW, socket_id, nread, sockets[socket_id].param);
         return;
     }
+    // LLOGD("on_recv 待读取数据长度 %d", nread);
+    // LLOGD("待读取内容 %.*s", nread, buf->base);
+    if (sockets[socket_id].recv_buff == NULL)
+    {
+        sockets[socket_id].recv_buff = luat_heap_malloc(nread);
+        sockets[socket_id].recv_size = nread;
+        memcpy(sockets[socket_id].recv_buff, buf->base, nread);
+    }
+    else
+    {
+        void *ptr = luat_heap_realloc(sockets[socket_id].recv_buff, sockets[socket_id].recv_size + nread);
+        if (ptr == NULL)
+        {
+            LLOGD("内存不足, 无法存放更多接收到的数据");
+            cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, sockets[socket_id].param);
+            return;
+        }
+        sockets[socket_id].recv_buff = ptr;
+        memcpy(sockets[socket_id].recv_buff + sockets[socket_id].recv_size, buf->base, nread);
+        sockets[socket_id].recv_size += nread;
+    }
+    luat_heap_free(buf->base);
+    cb_to_nw_task(EV_NW_SOCKET_RX_NEW, socket_id, nread, sockets[socket_id].param);
+    return;
 }
 
 static void on_recv_udp(uv_udp_t *udp,
@@ -255,7 +278,8 @@ static void on_recv_udp(uv_udp_t *udp,
         luat_heap_free(buf->base);
         return; // TODO 不太可能吧
     }
-    if (nread == 0) {
+    if (nread == 0)
+    {
         luat_heap_free(buf->base);
         return;
     }
@@ -306,11 +330,14 @@ static void on_connect(uv_connect_t *req, int status)
     if (status != 0)
     {
         LLOGE("连接服务器失败");
-        sockets[socket_id].is_closed = 1;
+        // sockets[socket_id].state = CLOSING;
+        set_socket_state(socket_id, CLOSING);
         cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, sockets[socket_id].param);
     }
     else
     {
+        // sockets[socket_id].state = CONNECTED;
+        set_socket_state(socket_id, CONNECTED);
         cb_to_nw_task(EV_NW_SOCKET_CONNECT_OK, socket_id, 0, sockets[socket_id].param);
     }
 
@@ -341,18 +368,18 @@ typedef struct on_connect_udp
     uv_async_t async;
     int socket_id;
     struct sockaddr_in addr;
-}on_connect_udp_t;
+} on_connect_udp_t;
 
-static void udp_connect_async(uv_async_t* async) {
+static void udp_connect_async(uv_async_t *async)
+{
     int ret = 0;
-    on_connect_udp_t* c = (on_connect_udp_t*)async->data;
+    on_connect_udp_t *c = (on_connect_udp_t *)async->data;
     int socket_id = c->socket_id;
     // ret = uv_udp_connect(&sockets[socket_id].udp, (const struct sockaddr *)&c->addr);
     // memcpy(&sockets[socket_id].remote, (const struct sockaddr *)&c->addr, sizeof(const struct sockaddr));
     on_connect(&sockets[socket_id].udp, ret);
     luat_heap_free(async);
 }
-
 
 // 作为client绑定一个port，并连接remote_ip和remote_port对应的server
 static int libuv_socket_connect(int socket_id, uint64_t tag, uint16_t local_port, luat_ip_addr_t *remote_ip, uint16_t remote_port, void *user_data)
@@ -361,8 +388,7 @@ static int libuv_socket_connect(int socket_id, uint64_t tag, uint16_t local_port
 
     int ret = 0;
 
-    struct sockaddr_in saddr = {
-        .sin_family = AF_INET};
+    struct sockaddr_in saddr = {.sin_family = AF_INET};
     saddr.sin_addr.s_addr = remote_ip->ipv4;
     saddr.sin_port = htons(remote_port);
     char addr[17] = {'\0'};
@@ -374,6 +400,10 @@ static int libuv_socket_connect(int socket_id, uint64_t tag, uint16_t local_port
         ret = uv_tcp_connect(&sockets[socket_id].c, &sockets[socket_id].tcp, (const struct sockaddr *)&saddr, on_connect);
         if (ret)
             LLOGE("uv_tcp_connect ret %d", ret);
+        else {
+            // sockets[socket_id].state = CONNECTING;
+            set_socket_state(socket_id, CONNECTING);
+        }
     }
     else
     {
@@ -387,12 +417,19 @@ static int libuv_socket_connect(int socket_id, uint64_t tag, uint16_t local_port
             if (ret)
                 LLOGD("uv_udp_bind ret %d", ret);
         }
-        on_connect_udp_t * c = luat_heap_malloc(sizeof(on_connect_udp_t));
+        on_connect_udp_t *c = luat_heap_malloc(sizeof(on_connect_udp_t));
         memcpy(&c->addr, &saddr, sizeof(struct sockaddr_in));
         c->socket_id = socket_id;
         c->async.data = c;
         uv_async_init(main_loop, &c->async, udp_connect_async);
         ret = uv_async_send(&c->async);
+        if (ret) {
+            luat_heap_free(c);
+        }
+        else {
+            // sockets[socket_id].state = CONNECTING;
+            set_socket_state(socket_id, CONNECTING);
+        }
     }
     return ret;
 }
@@ -417,12 +454,13 @@ static void on_close(uv_handle_t *handle)
     {
         return;
     }
-    if (sockets[socket_id].tag == 0 || sockets[socket_id].is_closed)
+    if (sockets[socket_id].tag == 0 || sockets[socket_id].state == CLOSED)
     {
         LLOGI("已经关闭过了 %d", socket_id);
         return;
     }
-    sockets[socket_id].is_closed = 1;
+    // sockets[socket_id].state = CLOSED;
+    set_socket_state(socket_id, CLOSED);
     cb_to_nw_task(EV_NW_SOCKET_CLOSE_OK, socket_id, 0, sockets[socket_id].param);
     sockets[socket_id].tag = 0;
 }
@@ -436,39 +474,45 @@ static void on_shutdown(uv_shutdown_t *handle)
         luat_heap_free(handle);
         return;
     }
-    if (sockets[socket_id].tag == 0 || sockets[socket_id].is_closed)
+    if (sockets[socket_id].tag == 0 || sockets[socket_id].state == CLOSED)
     {
         luat_heap_free(handle);
         LLOGI("已经关闭过了 %d", socket_id);
         return;
     }
-    sockets[socket_id].is_closed = 1;
+    // sockets[socket_id].state = CLOSED;
+    set_socket_state(socket_id, CLOSED);
     cb_to_nw_task(EV_NW_SOCKET_CLOSE_OK, socket_id, 0, sockets[socket_id].param);
     sockets[socket_id].tag = 0;
     luat_heap_free(handle);
 }
 
-static void udp_async_close(uv_async_t *handle) {
+static void udp_async_close(uv_async_t *handle)
+{
     int socket_id = (int)handle->data;
     luat_heap_free(handle);
     on_close(&sockets[socket_id].udp);
 }
 
-static int close_socket(int socket_id, const char* tag) {
+static int close_socket(int socket_id, const char *tag)
+{
     int ret = 0;
-    if (sockets[socket_id].is_tcp) {
-        uv_shutdown_t* shutdown = luat_heap_malloc(sizeof(uv_shutdown_t));
-        shutdown->data = (void*)socket_id;
+    if (sockets[socket_id].is_tcp)
+    {
+        uv_shutdown_t *shutdown = luat_heap_malloc(sizeof(uv_shutdown_t));
+        shutdown->data = (void *)socket_id;
         ret = uv_shutdown(shutdown, &sockets[socket_id].tcp, on_shutdown);
         if (ret)
             LLOGI("%s uv_shutdown %d %s", tag, ret, uv_err_name(ret));
     }
-    else {
+    else
+    {
         ret = uv_udp_recv_stop(&sockets[socket_id].udp);
         if (ret)
             LLOGI("%s uv_udp_recv_stop %d %s", tag, ret, uv_err_name(ret));
-        uv_async_t* async = luat_heap_malloc(sizeof(uv_async_t));
-        async->data = (void*)socket_id;
+        uv_async_t *async = luat_heap_malloc(sizeof(uv_async_t));
+        async->data = (void *)socket_id;
+        uv_async_init(main_loop, async, udp_async_close);
         uv_async_send(async);
     }
     return ret;
@@ -480,6 +524,8 @@ static int libuv_socket_disconnect(int socket_id, uint64_t tag, void *user_data)
     CHECK_SOCKET_ID
 
     // LLOGD("disconnect %d", socket_id);
+    if (sockets[socket_id].state == CLOSED)
+        return 0;
 
     return close_socket(socket_id, "disconnect");
 }
@@ -494,9 +540,9 @@ static int libuv_socket_force_close(int socket_id, void *user_data)
 
     // LLOGD("CALL libuv_socket_force_close %d", socket_id);
 
-    if (sockets[socket_id].tag == 0 || sockets[socket_id].is_closed)
+    if (sockets[socket_id].tag == 0 || sockets[socket_id].state == CLOSED)
     {
-        LLOGI("该socket已经释放,无需再次释放");
+        LLOGI("force_close 该socket已经释放 %d", socket_id);
         return 0;
     }
 
@@ -509,7 +555,10 @@ static int libuv_socket_close(int socket_id, uint64_t tag, void *user_data)
 {
     CHECK_SOCKET_ID
 
-    // LLOGD("close %d", socket_id);
+    if (sockets[socket_id].tag == 0 || sockets[socket_id].state == CLOSED) {
+        LLOGI("该socket已经释放,无需再次释放 %d", socket_id);
+        return 0;
+    }
 
     return close_socket(socket_id, "close");
 }
@@ -553,19 +602,23 @@ static int libuv_socket_receive(int socket_id, uint64_t tag, uint8_t *buf, uint3
             sockets[socket_id].recv_size = newsize;
         }
     }
-    else {
+    else
+    {
         if (buf == NULL)
         {
             return sockets[socket_id].udp_data == NULL ? 0 : sockets[socket_id].udp_data->len;
         }
-        if (len == 0) {
+        if (len == 0)
+        {
             return 0;
         }
-        if (sockets[socket_id].udp_data->len < len) {
+        if (sockets[socket_id].udp_data->len < len)
+        {
             len = sockets[socket_id].udp_data->len;
         }
         memcpy(buf, sockets[socket_id].udp_data->data, len);
-        if (remote_ip) {
+        if (remote_ip)
+        {
             remote_ip->is_ipv6 = 0;
             remote_ip->ipv4 = sockets[socket_id].udp_data->from.sin_addr.s_addr;
         }
@@ -640,6 +693,10 @@ static int libuv_socket_send(int socket_id, uint64_t tag, const uint8_t *buf, ui
 
     if (len == 0)
         return 0;
+    if (sockets[socket_id].state != CONNECTED) {
+        LLOGW("链接没建立,不能发送数据 %d", socket_id);
+        return -1;
+    }
 
     buff = uv_buf_init(buf, len);
     // LLOGD("待发送的内容 %.*s", len, buf);
@@ -702,20 +759,23 @@ void libuv_socket_clean(int *vaild_socket_list, uint32_t num, void *user_data)
             }
             sockets[socket_id].recv_size = 0;
 
-            if (sockets[socket_id].udp_data != NULL) {
-                uv_udp_data_t* head = sockets[socket_id].udp_data;
-                uv_udp_data_t* next = NULL;
-                while (1) {
+            if (sockets[socket_id].udp_data != NULL)
+            {
+                uv_udp_data_t *head = sockets[socket_id].udp_data;
+                uv_udp_data_t *next = NULL;
+                while (1)
+                {
                     next = head->next;
                     luat_heap_free(head);
-                    if (next == NULL) {
+                    if (next == NULL)
+                    {
                         break;
                     }
                     head = next;
                 }
                 sockets[socket_id].udp_data = NULL;
             }
-
+            sockets[socket_id].state = IDLE;
             continue;
         }
     }
@@ -875,30 +935,36 @@ static const network_adapter_info prv_libuv_adapter =
         .is_posix = 0,
 };
 
-static int l_ip_ready(lua_State *L, void* ptr) {
-	(void)ptr;
-	rtos_msg_t* msg = (rtos_msg_t*)lua_topointer(L, -1);
-	lua_getglobal(L, "sys_pub");
-    if (!lua_isfunction(L, -1)) {
+static int l_ip_ready(lua_State *L, void *ptr)
+{
+    (void)ptr;
+    rtos_msg_t *msg = (rtos_msg_t *)lua_topointer(L, -1);
+    lua_getglobal(L, "sys_pub");
+    if (!lua_isfunction(L, -1))
+    {
         return 0;
     }
-	if (msg->arg1) {
-		lua_pushliteral(L, "IP_READY");
-		uint32_t ip = msg->arg2;
-		lua_pushfstring(L, "%d.%d.%d.%d", (ip) & 0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
-		lua_pushinteger(L, NW_ADAPTER_INDEX_ETH0);
-		lua_call(L, 3, 0);
-	}
-    else {
-		lua_pushliteral(L, "IP_LOSE");
-		lua_pushinteger(L, NW_ADAPTER_INDEX_ETH0);
-		lua_call(L, 2, 0);
-	}
+    if (msg->arg1)
+    {
+        lua_pushliteral(L, "IP_READY");
+        uint32_t ip = msg->arg2;
+        lua_pushfstring(L, "%d.%d.%d.%d", (ip)&0xFF, (ip >> 8) & 0xFF, (ip >> 16) & 0xFF, (ip >> 24) & 0xFF);
+        lua_pushinteger(L, NW_ADAPTER_INDEX_ETH0);
+        lua_call(L, 3, 0);
+    }
+    else
+    {
+        lua_pushliteral(L, "IP_LOSE");
+        lua_pushinteger(L, NW_ADAPTER_INDEX_ETH0);
+        lua_call(L, 2, 0);
+    }
     return 0;
 }
 
-static void ip_ready_timer_cb(uv_timer_t *t) {
+static void ip_ready_timer_cb(uv_timer_t *t)
+{
     rtos_msg_t msg = {0};
+    luat_heap_free(t);
     msg.handler = l_ip_ready;
     msg.arg1 = 1;
     luat_msgbus_put(&msg, 0);
