@@ -40,8 +40,9 @@ uint64_t luat_mcu_tick64(void) {
     if (ret) {
         return 0;
     }
-    uint64_t tmp = ts.tv_sec * 1000000 + ts.tv_nsec;
-    uint64_t tmp2 = boot_ts.tv_sec * 1000000 + boot_ts.tv_nsec;
+    uint64_t tmp = ts.tv_sec * 1000000L + ts.tv_nsec;
+    uint64_t tmp2 = boot_ts.tv_sec * 1000000L + boot_ts.tv_nsec;
+    //LLOGD("tick64 %llu", tmp - tmp2);
     return tmp - tmp2;
 }
 
