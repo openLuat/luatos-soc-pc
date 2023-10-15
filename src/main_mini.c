@@ -70,9 +70,9 @@ int main(int argc, char** argv) {
     #endif
 
     uv_thread_t l_main;
-    uv_idle_t idle;
-    uv_idle_init(main_loop, &idle);
-    uv_idle_start(&idle, _idle);
+    // uv_idle_t idle;
+    // uv_idle_init(main_loop, &idle);
+    // uv_idle_start(&idle, _idle);
     uv_thread_create(&l_main, uv_luat_main, NULL);
 
     // uv_thread_join(&l_main);

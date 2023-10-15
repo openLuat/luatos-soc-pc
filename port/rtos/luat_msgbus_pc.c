@@ -47,12 +47,12 @@ uint32_t luat_msgbus_put(rtos_msg_t* msg, size_t timeout) {
     return 0;
 }
 uint32_t luat_msgbus_get(rtos_msg_t* msg, size_t timeout) {
-    LLOGD("luat_msgbus_get %d", timeout);
+    // LLOGD("luat_msgbus_get %d", timeout);
     uv_queue_item_t* q = &head;
     if (timeout > 0 && timeout != (size_t)(-1)) {
         while (timeout >0) {
             if (head.next == NULL) {
-                uv_sleep(2);
+                uv_sleep(1);
                 timeout --;
                 continue;
             }
@@ -73,7 +73,7 @@ uint32_t luat_msgbus_get(rtos_msg_t* msg, size_t timeout) {
     else {
         while (1) {
             if (head.next == NULL) {
-                uv_sleep(2);
+                uv_sleep(1);
                 continue;
             }
             uv_mutex_lock(&m);
