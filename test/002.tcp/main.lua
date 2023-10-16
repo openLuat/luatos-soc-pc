@@ -23,7 +23,7 @@ sys.taskInit(function()
         log.info("netc", netc)
         socket.config(netc)
         socket.debug(netc, true)
-        socket.connect(netc, "112.125.89.8", 46625)
+        socket.connect(netc, "112.125.89.8", 46631)
 
         while running do
             sys.wait(100)

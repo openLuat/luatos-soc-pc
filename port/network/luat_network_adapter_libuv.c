@@ -213,6 +213,10 @@ static void on_recv(uv_stream_t *tcp,
     {
         // LLOGD("on_recv %d %s", nread, uv_err_name(nread));
         luat_heap_free(buf->base);
+        if (sockets[socket_id].state == CLOSED) {
+            LLOGD("socket[%d]状态是已关闭,不需要理会on_recv事件了", socket_id);
+            return;
+        }
         if (nread == UV_EOF)
         {
             LLOGD("服务器断开了连接 %d %s", socket_id, socket_state_str(sockets[socket_id].state));
@@ -329,9 +333,9 @@ static void on_connect(uv_connect_t *req, int status)
     int ret = 0;
     if (status != 0)
     {
-        LLOGE("连接服务器失败");
+        LLOGE("socket[%d]连接服务器失败", socket_id);
         // sockets[socket_id].state = CLOSING;
-        set_socket_state(socket_id, CLOSING);
+        set_socket_state(socket_id, CLOSED);
         cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, sockets[socket_id].param);
     }
     else
