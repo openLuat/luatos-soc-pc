@@ -6,10 +6,12 @@
 
 #define LUAT_LOG_TAG "rtos.mutex"
 #include "luat_log.h"
+#include "luat_queue_pc.h"
 
 typedef struct utask
 {
     uv_thread_t t;
+    uv_queue_item_t queue;
 }utask_t;
 
 
