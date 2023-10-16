@@ -507,8 +507,10 @@ static int close_socket(int socket_id, const char *tag)
         uv_shutdown_t *shutdown = luat_heap_malloc(sizeof(uv_shutdown_t));
         shutdown->data = (void *)socket_id;
         ret = uv_shutdown(shutdown, &sockets[socket_id].tcp, on_shutdown);
-        if (ret)
+        if (ret) {
+            luat_heap_free(shutdown);
             LLOGI("%s uv_shutdown %d %s", tag, ret, uv_err_name(ret));
+        }
     }
     else
     {
@@ -518,7 +520,11 @@ static int close_socket(int socket_id, const char *tag)
         uv_async_t *async = luat_heap_malloc(sizeof(uv_async_t));
         async->data = (void *)socket_id;
         uv_async_init(main_loop, async, udp_async_close);
-        uv_async_send(async);
+        ret = uv_async_send(async);
+        if (ret) {
+            luat_heap_free(async);
+            LLOGI("%s uv_async_send %d %s", tag, ret, uv_err_name(ret));
+        }
     }
     return ret;
 }
@@ -714,8 +720,10 @@ static int libuv_socket_send(int socket_id, uint64_t tag, const uint8_t *buf, ui
         memcpy(tmp, &len, 4);
         req->data = (void *)socket_id;
         ret = uv_write(req, (uv_stream_t *)&sockets[socket_id].tcp, &buff, 1, on_sent);
-        if (ret)
+        if (ret) {
+            luat_heap_free(req);
             LLOGI("uv_write %d", ret);
+        }
     }
     else
     {
@@ -732,16 +740,14 @@ static int libuv_socket_send(int socket_id, uint64_t tag, const uint8_t *buf, ui
         // uv_ip4_addr(addr, remote_port, &send_addr);
         // LLOGD("UDP发送 %s:%d", addr, remote_port);
         ret = uv_udp_send(send_req, &sockets[socket_id].udp, &buff, 1, (const struct sockaddr *)&send_addr, on_sent_udp);
-        if (ret)
+        if (ret) {
+            luat_heap_free(send_req);
             LLOGI("uv_udp_send %d %s", ret, uv_err_name(ret));
+        }
     }
 
     if (ret)
     {
-        if (req)
-            luat_heap_free(req);
-        if (send_req)
-            luat_heap_free(send_req);
         return -1;
     }
     return len;
