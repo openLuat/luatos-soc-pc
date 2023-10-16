@@ -33,7 +33,13 @@ uv_loop_t *main_loop;
 
 void uv_luat_main(void* args) {
     (void)args;
-    lua_main(cmdline_argc, cmdline_argv);
+    // printf("cmdline_argc %d\n", cmdline_argc);
+    if (cmdline_argc == 1) {
+        lua_main(cmdline_argc, cmdline_argv);
+    }
+    else {
+        luat_main();
+    }
 }
 
 static void timer_nop(uv_timer_t *handle) {
@@ -42,10 +48,12 @@ static void timer_nop(uv_timer_t *handle) {
 
 // boot
 int main(int argc, char** argv) {
-    uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
+    cmdline_argc = argc;
+    cmdline_argv = argv;
     main_loop = malloc(sizeof(uv_loop_t));
     // uv_replace_allocator(luat_heap_malloc, luat_heap_realloc, luat_heap_calloc, luat_heap_free);
     uv_loop_init(main_loop);
+    uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
 
     luat_pcconf_init();
 
@@ -53,23 +61,6 @@ int main(int argc, char** argv) {
     bpool(luavm_heap, LUAT_HEAP_SIZE);
     luat_fs_init();
     luat_network_init();
-#ifdef LUAT_USE_LUAC
-    extern int luac_main(int argc, char* argv[]);
-    luac_main(argc, argv);
-#else
-    cmdline_argc = argc;
-    cmdline_argv = argv;
-    #if 0
-    if (cmdline_argc > 1) {
-        size_t len = strlen(cmdline_argv[1]);
-        if (cmdline_argv[1][0] != '-') {
-            if (cmdline_argv[1][len - 1] == '/' || cmdline_argv[1][len - 1] == '\\') {
-                printf("chdir %s %d\n", cmdline_argv[1], chdir(cmdline_argv[1]));
-                cmdline_argc = 1;
-            }
-        }
-    }
-    #endif
 
     uv_thread_t l_main;
     uv_timer_t t;
@@ -82,7 +73,5 @@ int main(int argc, char** argv) {
 
     uv_loop_close(main_loop);
     free(main_loop);
-    LLOGD("uv_run is done");
-#endif
     return 0;
 }

@@ -82,6 +82,7 @@ target("luatos-lua")
             ,luatos.."luat/modules/luat_lib_libcoap.c"
             ,luatos.."luat/modules/luat_lib_rtc.c"
             ,luatos.."luat/modules/luat_lib_gpio.c"
+            ,luatos.."luat/modules/luat_main.c"
             )
 
     add_files(luatos.."luat/vfs/*.c")
