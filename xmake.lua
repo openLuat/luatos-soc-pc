@@ -164,8 +164,8 @@ target("luatos-lua")
     add_files(luatos.."components/network/libhttp/*.c")
 
     -- libftp
-    -- add_includedirs(luatos.."components/network/libftp",{public = true})
-    -- add_files(luatos.."components/network/libftp/*.c")
+    add_includedirs(luatos.."components/network/libftp",{public = true})
+    add_files(luatos.."components/network/libftp/*.c")
     
     -- websocket
     add_includedirs(luatos.."components/network/websocket",{public = true})
@@ -180,7 +180,7 @@ target("luatos-lua")
     add_files(luatos.."components/network/libemqtt/*.c")
 
     -- errdump
-    -- add_includedirs(luatos.."components/network/errdump",{public = true})
-    -- add_files(luatos.."components/network/errdump/*.c")
+    add_includedirs(luatos.."components/network/errdump",{public = true})
+    add_files(luatos.."components/network/errdump/*.c")
     
 target_end()

@@ -32,6 +32,7 @@ void luat_network_init(void);
 uv_loop_t *main_loop;
 
 void uv_luat_main(void* args) {
+    (void)args;
     lua_main(cmdline_argc, cmdline_argv);
 }
 
@@ -43,7 +44,7 @@ static void timer_nop(uv_timer_t *handle) {
 int main(int argc, char** argv) {
     uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
     main_loop = malloc(sizeof(uv_loop_t));
-    uv_replace_allocator(luat_heap_malloc, luat_heap_realloc, luat_heap_calloc, luat_heap_free);
+    // uv_replace_allocator(luat_heap_malloc, luat_heap_realloc, luat_heap_calloc, luat_heap_free);
     uv_loop_init(main_loop);
 
     luat_pcconf_init();
@@ -73,7 +74,7 @@ int main(int argc, char** argv) {
     uv_thread_t l_main;
     uv_timer_t t;
     uv_timer_init(main_loop, &t);
-    uv_timer_start(&t, timer_nop, 1000, 1000);
+    uv_timer_start(&t, timer_nop, 10000000, 10000000);
     uv_thread_create(&l_main, uv_luat_main, NULL);
 
     // uv_thread_join(&l_main);

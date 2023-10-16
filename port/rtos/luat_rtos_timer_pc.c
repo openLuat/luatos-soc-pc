@@ -83,3 +83,37 @@ void luat_task_suspend_all(void) {
 void luat_task_resume_all(void) {
 
 }
+
+int luat_rtos_timer_create(luat_rtos_timer_t *timer_handle)
+{
+	if (!timer_handle) return -1;
+	*timer_handle = luat_create_rtos_timer(NULL, NULL, NULL);
+	return (*timer_handle)?0:-1;
+}
+
+int luat_rtos_timer_delete(luat_rtos_timer_t timer_handle)
+{
+	if (!timer_handle) return -1;
+	luat_release_rtos_timer(timer_handle);
+	return 0;
+}
+
+int luat_rtos_timer_start(luat_rtos_timer_t timer_handle, uint32_t timeout, uint8_t repeat, luat_rtos_timer_callback_t callback_fun, void *user_param)
+{
+	if (!timer_handle) return -1;
+	uv_timer_t *t = (uv_timer_t *)timer_handle;
+    ((timer_data_t*)t->data)->is_repeat = repeat;
+    ((timer_data_t*)t->data)->timeout = timeout;
+    ((timer_data_t*)t->data)->cb = callback_fun;
+    ((timer_data_t*)t->data)->param = user_param;
+    uv_timer_start(t, timer_cb, timeout, 0);
+    return 0;
+}
+
+int luat_rtos_timer_stop(luat_rtos_timer_t timer_handle)
+{
+	if (!timer_handle) return -1;
+	luat_stop_rtos_timer(timer_handle);
+	return 0;
+}
+
