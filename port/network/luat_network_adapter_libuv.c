@@ -17,7 +17,7 @@
 #define MAX_SOCK_NUM 8
 
 #ifndef LUAT_NETWORK_DEBUG
-#define LUAT_NETWORK_DEBUG 1
+#define LUAT_NETWORK_DEBUG 0
 #endif
 
 #if (LUAT_NETWORK_DEBUG == 0)
