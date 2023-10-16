@@ -788,13 +788,41 @@ void libuv_socket_clean(int *vaild_socket_list, uint32_t num, void *user_data)
 
 static int libuv_get_local_ip_info(luat_ip_addr_t *ip, luat_ip_addr_t *submask, luat_ip_addr_t *gateway, void *user_data)
 {
-    LLOGD("获取本地IP信息, 未实现");
-    return -1;
+    char buf[64] = {0};
+    uv_interface_address_t *info;
+    int count, i;
+
+    uv_interface_addresses(&info, &count);
+    i = count;
+
+    // printf("Number of interfaces: %d\n", count);
+    int flag = 0;
+    while (i--) {
+        uv_interface_address_t interface_a = info[i];
+        if (interface_a.is_internal)
+            continue;
+
+        if (interface_a.address.address4.sin_family == AF_INET) {
+            uv_ip4_name(&interface_a.address.address4, buf, sizeof(buf));
+            LLOGD("%s ipv4 addr: %s", interface_a.name,  buf);
+            flag = 1;
+            ip->ipv4 = interface_a.address.address4.sin_addr.s_addr;
+            submask->ipv4 = interface_a.netmask.netmask4.sin_addr.s_addr;
+            // gateway并不能直接获取到, 这里做个假的吧
+            gateway->ipv4 = (ip->ipv4 & 0xFFFFFF) | 0x1000000;
+            break;
+        }
+    }
+
+    uv_free_interface_addresses(info, count);
+    if (flag == 0)
+        return -1;
+    return 0;
 }
 
 static int libuv_get_full_ip_info(luat_ip_addr_t *ip, luat_ip_addr_t *submask, luat_ip_addr_t *gateway, luat_ip_addr_t *ipv6, void *user_data)
 {
-    LLOGD("获取全部本地IP信息, 未实现");
+    LLOGI("获取全部本地IP信息, 未实现");
     return -1;
 }
 
