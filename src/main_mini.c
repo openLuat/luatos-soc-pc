@@ -43,6 +43,7 @@ static void timer_nop(uv_timer_t *handle) {
 int main(int argc, char** argv) {
     uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
     main_loop = malloc(sizeof(uv_loop_t));
+    uv_replace_allocator(luat_heap_malloc, luat_heap_realloc, luat_heap_calloc, luat_heap_free);
     uv_loop_init(main_loop);
 
     luat_pcconf_init();
