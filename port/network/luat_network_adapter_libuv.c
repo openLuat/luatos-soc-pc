@@ -169,6 +169,7 @@ static int libuv_create_socket(uint8_t is_tcp, uint64_t *tag, void *param, uint8
         {
             if (is_tcp) {
                 uv_tcp_init(main_loop, &sockets[i].tcp);
+                uv_tcp_keepalive(&sockets[i].tcp, 1, 60);
                 sockets[i].tcp.data = (void*)i;
             }
             else {
