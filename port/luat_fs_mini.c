@@ -63,7 +63,7 @@ static char *luadb_ptr;
 static size_t luadb_offset;
 static int luadb_init(void)
 {
-	char *tmp = luat_heap_malloc(0x16);
+	char *tmp = luat_heap_malloc(0x20);
 	size_t offset = 0;
 	// magic of luadb
 	tmp[offset + 0] = 0x01;
@@ -87,7 +87,7 @@ static int luadb_init(void)
 	tmp[offset + 2] = 0x00;
 	tmp[offset + 3] = 0x00;
 	tmp[offset + 4] = 0x00;
-	tmp[offset + 5] = 0x16;
+	tmp[offset + 5] = 0x18;
 	offset += 6;
 
 	// file count
