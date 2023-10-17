@@ -12,13 +12,13 @@
 extern uv_loop_t *main_loop;
 
 #define TIMER_ID_MAX (1024)
-static uv_timer_t timers[TIMER_ID_MAX];
+static uv_timer_t* timers[TIMER_ID_MAX];
 
 static int get_free_timer_id(void)
 {
     for (size_t i = 0; i < TIMER_ID_MAX; i++)
     {
-        if (timers[i].data == NULL)
+        if (timers[i] == NULL)
         {
             return i;
         }
@@ -30,14 +30,14 @@ static uv_timer_t *get_timer_by_id(size_t id)
 {
     for (size_t i = 0; i < TIMER_ID_MAX; i++)
     {
-        if (timers[i].data == NULL)
+        if (timers[i] == NULL || timers[i]->data == NULL)
         {
             continue;
         }
-        luat_timer_t *timer = (luat_timer_t *)timers[i].data;
+        luat_timer_t *timer = (luat_timer_t *)timers[i]->data;
         if (timer->id == id)
         {
-            return &timers[i];
+            return timers[i];
         }
     }
     return NULL;
@@ -79,7 +79,7 @@ static void timer_cb(uv_timer_t *handle)
         // LLOGD("single time timer");
     }
     if (ret)
-        LLOGD("出错了");
+        LLOGD("timer 出错了");
     rtos_msg_t msg;
     msg.handler = timer->func;
     msg.ptr = NULL;
@@ -97,22 +97,42 @@ int luat_timer_start(luat_timer_t *timer)
         LLOGE("too many timer created");
         return -1;
     }
-    uv_timer_t *timer_req = &timers[id];
+    timers[id] = luat_heap_malloc(sizeof(uv_timer_t));
+    uv_timer_t *timer_req = timers[id];
     ret = uv_timer_init(main_loop, timer_req);
+    if (ret) {
+        LLOGE("uv_timer_init %d", ret);
+    }
     // LLOGD("uv_timer_init %d", ret);
     timer_req->data = timer;
     timer->os_timer = timer_req;
     ret = uv_timer_start(timer_req, timer_cb, timer->timeout, 0);
-    // LLOGD("uv_timer_start %d", ret);
+    if (ret) {
+        LLOGE("uv_timer_start %d", ret);
+    }
+    // else
+    //     LLOGD("timer[%d] 启动成功 %d %d", id, timer->timeout, timer->repeat);
     return ret;
 }
 int luat_timer_stop(luat_timer_t *timer)
 {
-    // LLOGD("timer stop");
+    // LLOGD("timer stop %d", timer);
     uv_timer_t *timer_req = timer->os_timer;
-    uv_timer_stop(timer_req);
-    timer_req->data = NULL;
-    return 0;
+    int ret = 0;
+    for (size_t i = 0; i < TIMER_ID_MAX; i++)
+    {
+        if (timer_req == timers[i]) {
+            // LLOGD("释放timer %p", timer_req);
+            ret = uv_timer_stop(timer_req);
+            if (ret)
+                LLOGI("uv_timer_stop %d", ret);
+            luat_heap_free(timer_req);
+            timers[i] = NULL;
+            return 0;
+        }
+    }
+    // LLOGD("没有找到对应的timer");
+    return -1;
 }
 luat_timer_t *luat_timer_get(size_t timer_id)
 {
