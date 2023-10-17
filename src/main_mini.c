@@ -44,6 +44,7 @@ void uv_luat_main(void* args) {
 
 static void timer_nop(uv_timer_t *handle) {
     // 不需要操作东西
+    (void)handle;
 }
 
 // boot
@@ -65,7 +66,7 @@ int main(int argc, char** argv) {
     uv_thread_t l_main;
     uv_timer_t t;
     uv_timer_init(main_loop, &t);
-    uv_timer_start(&t, timer_nop, 10000000, 10000000);
+    uv_timer_start(&t, timer_nop, 1000, 1000);
     uv_thread_create(&l_main, uv_luat_main, NULL);
 
     // uv_thread_join(&l_main);
