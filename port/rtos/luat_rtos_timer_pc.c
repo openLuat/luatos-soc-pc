@@ -23,10 +23,10 @@ extern uv_loop_t *main_loop;
 
 static void timer_cb(uv_timer_t *handle) {
     timer_data_t* data = (timer_data_t*)handle->data;
+    ((tcb)data->cb)(data->param);
     if (data->is_repeat) {
         uv_timer_start(handle, timer_cb, data->timeout, 0);
     }
-    ((tcb)data->cb)(data->param);
 }
 
 // Timer类
@@ -55,8 +55,7 @@ int luat_start_rtos_timer(void *timer, uint32_t ms, uint8_t is_repeat) {
     // LLOGD("启动rtos timer %p", t, ms, is_repeat);
     ((timer_data_t*)t->data)->is_repeat = is_repeat;
     ((timer_data_t*)t->data)->timeout = ms;
-    uv_timer_start(t, timer_cb, ms, 0);
-    return 0;
+    return uv_timer_start(t, timer_cb, ms, 0);
 }
 
 int luat_start_rtos_timer_us(void *timer, uint32_t us) {
@@ -106,8 +105,7 @@ int luat_rtos_timer_start(luat_rtos_timer_t timer_handle, uint32_t timeout, uint
     ((timer_data_t*)t->data)->timeout = timeout;
     ((timer_data_t*)t->data)->cb = callback_fun;
     ((timer_data_t*)t->data)->param = user_param;
-    uv_timer_start(t, timer_cb, timeout, 0);
-    return 0;
+    return uv_timer_start(t, timer_cb, timeout, 0);
 }
 
 int luat_rtos_timer_stop(luat_rtos_timer_t timer_handle)
