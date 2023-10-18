@@ -90,9 +90,10 @@ void luat_meminfo_luavm(size_t *total, size_t *used, size_t *max_used) {
 }
 
 void luat_meminfo_sys(size_t *total, size_t *used, size_t *max_used) {
-	*used = 0;
-	*max_used = 0;
-    *total = 0;
+    // TODO 貌似真实不了-_-
+	*used = 128*1024;
+	*max_used = 64*1024;
+    *total = 246*1024;
 }
 
 //-----------------------------------------------------------------------------
