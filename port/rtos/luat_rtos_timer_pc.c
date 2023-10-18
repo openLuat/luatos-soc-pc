@@ -23,7 +23,8 @@ extern uv_loop_t *main_loop;
 
 static void timer_cb(uv_timer_t *handle) {
     timer_data_t* data = (timer_data_t*)handle->data;
-    ((tcb)data->cb)(data->param);
+    if (data->cb)
+        ((tcb)data->cb)(data->param);
     if (data->is_repeat) {
         uv_timer_start(handle, timer_cb, data->timeout, 0);
     }
@@ -58,10 +59,10 @@ int luat_start_rtos_timer(void *timer, uint32_t ms, uint8_t is_repeat) {
     return uv_timer_start(t, timer_cb, ms, 0);
 }
 
-int luat_start_rtos_timer_us(void *timer, uint32_t us) {
-    LLOGD("luat_start_rtos_timer_us NOT support");
-    return -1;
-}
+// int luat_start_rtos_timer_us(void *timer, uint32_t us) {
+//     LLOGD("luat_start_rtos_timer_us NOT support");
+//     return -1;
+// }
 void luat_stop_rtos_timer(void *timer) {
     uv_timer_t *t = (uv_timer_t *)timer;
     uv_timer_stop(t);
