@@ -142,6 +142,10 @@ target("luatos-lua")
     add_includedirs(luatos.."components/mempool/profiler/include",{public = true})
     add_files(luatos.."components/mempool/profiler/**.c")
 
+    -- fastlz
+    add_includedirs(luatos.."components/fastlz",{public = true})
+    add_files(luatos.."components/fastlz/*.c")
+
     -- c_common
     add_includedirs(luatos.."components/common",{public = true})
     add_files(luatos.."components/common/*.c")

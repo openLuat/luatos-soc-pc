@@ -88,5 +88,6 @@
 #define LUAT_USE_RSA 1
 #define LUAT_USE_ICONV 1
 #define LUAT_USE_BIT64 1
+#define LUAT_USE_FASTLZ 1
 
 #endif
