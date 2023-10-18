@@ -126,17 +126,37 @@ static inline int set_socket_state(int socket_id, int state) {
     return 0;
 }
 
+typedef struct task_event_async
+{
+    uv_async_t async;
+    OS_EVENT event;
+}task_event_async_t;
+
+
+static void cb_nw_task_async(uv_async_t *async) {
+    task_event_async_t* e = (task_event_async_t*)async;
+    luat_network_cb_param_t param = {.tag = 0, .param = NULL};
+    // LLOGD("发送nw_task消息 %08X %s", event_id, network_ctrl_state_string(event_id));
+    if ((e->event.ID > EV_NW_DNS_RESULT))
+    {
+        e->event.Param3 = sockets[e->event.Param1].param;
+        param.tag = sockets[e->event.Param1].tag;
+    }
+    ctrl.socket_cb(&e->event, &param);
+    luat_heap_free(async);
+}
+
 static void cb_to_nw_task(uint32_t event_id, uint32_t param1, uint32_t param2, uint32_t param3)
 {
-    luat_network_cb_param_t param = {.tag = 0, .param = NULL};
-    OS_EVENT event = {.ID = event_id, .Param1 = param1, .Param2 = param2, .Param3 = param3};
-    // LLOGD("发送nw_task消息 %08X %s", event_id, network_ctrl_state_string(event_id));
-    if ((event_id > EV_NW_DNS_RESULT))
-    {
-        event.Param3 = sockets[param1].param;
-        param.tag = sockets[param1].tag;
+    task_event_async_t *e = luat_heap_malloc(sizeof(task_event_async_t));
+    if (e == NULL) {
+        LLOGE("out of memory when malloc cb_to_nw_task async ctx");
+        return;
     }
-    ctrl.socket_cb(&event, &param);
+    OS_EVENT event = {.ID = event_id, .Param1 = param1, .Param2 = param2, .Param3 = param3};
+    memcpy(&e->event, &event, sizeof(OS_EVENT));
+    uv_async_init(main_loop, &e->async, cb_nw_task_async);
+    uv_async_send(&e->async);
 }
 
 static int libuv_set_dns_server(uint8_t server_index, luat_ip_addr_t *ip, void *user_data);
@@ -154,6 +174,7 @@ static int libuv_socket_check(int socket_id, uint64_t tag, void *user_data)
 
 static uint8_t libuv_check_ready(void *user_data)
 {
+    (void)user_data;
     return 1; // 当前总是当成联网状态
 }
 
@@ -194,6 +215,7 @@ static int libuv_create_socket(uint8_t is_tcp, uint64_t *tag, void *param, uint8
 void uv_buf_alloc(uv_handle_t *tcp, size_t size, uv_buf_t *buf)
 {
     // LLOGD("buf_alloc %d", size);
+    (void)tcp;
     void *ptr = luat_heap_malloc(size);
     buf->len = ptr == NULL ? 0 : size;
     buf->base = ptr;
@@ -337,13 +359,13 @@ static void on_connect(uv_connect_t *req, int status)
         LLOGE("socket[%d]连接服务器失败", socket_id);
         // sockets[socket_id].state = CLOSING;
         set_socket_state(socket_id, CLOSED);
-        cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, sockets[socket_id].param);
+        cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, 0);
     }
     else
     {
         // sockets[socket_id].state = CONNECTED;
         set_socket_state(socket_id, CONNECTED);
-        cb_to_nw_task(EV_NW_SOCKET_CONNECT_OK, socket_id, 0, sockets[socket_id].param);
+        cb_to_nw_task(EV_NW_SOCKET_CONNECT_OK, socket_id, 0, 0);
     }
 
     if (status == 0)
