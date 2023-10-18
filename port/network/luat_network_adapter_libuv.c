@@ -130,19 +130,13 @@ typedef struct task_event_async
 {
     uv_async_t async;
     OS_EVENT event;
+    luat_network_cb_param_t param;
 }task_event_async_t;
 
 
 static void cb_nw_task_async(uv_async_t *async) {
     task_event_async_t* e = (task_event_async_t*)async;
-    luat_network_cb_param_t param = {.tag = 0, .param = NULL};
-    // LLOGD("发送nw_task消息 %08X %s", event_id, network_ctrl_state_string(event_id));
-    if ((e->event.ID > EV_NW_DNS_RESULT))
-    {
-        e->event.Param3 = sockets[e->event.Param1].param;
-        param.tag = sockets[e->event.Param1].tag;
-    }
-    ctrl.socket_cb(&e->event, &param);
+    ctrl.socket_cb(&e->event, &e->param);
     luat_heap_free(async);
 }
 
@@ -155,6 +149,14 @@ static void cb_to_nw_task(uint32_t event_id, uint32_t param1, uint32_t param2, u
     }
     OS_EVENT event = {.ID = event_id, .Param1 = param1, .Param2 = param2, .Param3 = param3};
     memcpy(&e->event, &event, sizeof(OS_EVENT));
+    luat_network_cb_param_t param = {.tag = 0, .param = NULL};
+    // LLOGI("发送nw_task消息 %08X", e->event.ID);
+    if ((e->event.ID > EV_NW_DNS_RESULT))
+    {
+        e->event.Param3 = sockets[e->event.Param1].param;
+        param.tag = sockets[e->event.Param1].tag;
+    }
+    memcpy(&e->param, &param, sizeof(luat_network_cb_param_t));
     uv_async_init(main_loop, &e->async, cb_nw_task_async);
     uv_async_send(&e->async);
 }
