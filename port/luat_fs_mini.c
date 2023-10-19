@@ -172,16 +172,29 @@ static int luadb_addfile(const char *name, char *data, size_t len)
 	return 0;
 }
 
-void *build_luadb_from_cmd(void)
-{
-	size_t len = 0;
-	int ret = 0;
-	void *ptr = NULL;
+void *check_cmd_args(int index);
+void *build_luadb_from_cmd(void) {
 	if (cmdline_argc == 1)
 	{
 		return NULL;
 	}
-	const char *path = cmdline_argv[1];
+	for (size_t i = 1; i < (size_t)cmdline_argc; i++)
+	{
+		const char *argv = cmdline_argv[i];
+		if (argv[0] == '-') {
+			continue;
+		}
+		check_cmd_args(i);
+	}
+	return luadb_ptr;
+}
+
+void *check_cmd_args(int index)
+{
+	size_t len = 0;
+	// int ret = 0;
+	void *ptr = NULL;
+	const char *path = cmdline_argv[index];
 	if (strlen(path) < 4)
 	{
 		return NULL;
@@ -210,7 +223,7 @@ void *build_luadb_from_cmd(void)
 	}
 	if (!memcmp(path + strlen(path) - 4, ".lua", 4))
 	{
-		// LLOGD("把%s当做main.lua运行", path);
+		LLOGD("把%s当做main.lua运行", path);
 		FILE *f = fopen(path, "rb");
 		if (!f)
 		{
@@ -243,7 +256,7 @@ void *build_luadb_from_cmd(void)
 		FILE* f = NULL;
 		char buff[512] = {0};
 
-		// LLOGD("目录模式 %s", path);
+		LLOGD("目录模式 %s", path);
 		#ifdef LUA_USE_WINDOWS
 		memcpy(buff, path, strlen(path));
 		#else
@@ -256,7 +269,7 @@ void *build_luadb_from_cmd(void)
 			// LLOGD("开始遍历目录 %s", path);
 			while ((ep = readdir(dp)) != NULL)
 			{
-				// LLOGD("文件/目录 %s %d", ep->d_name, ep->d_type);
+				LLOGD("文件/目录 %s %d", ep->d_name, ep->d_type);
 				if (ep->d_type != DT_REG) {
 					continue;
 				}
@@ -297,6 +310,6 @@ void *build_luadb_from_cmd(void)
 			return NULL;
 		}
 	}
-	LLOGD("啥模式都不是, 没法加载 %s", path);
+	// LLOGD("啥模式都不是, 没法加载 %s", path);
 	return NULL;
 }
