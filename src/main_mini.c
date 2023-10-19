@@ -30,6 +30,7 @@ void luat_uart_initial_win32(void);
 void luat_network_init(void);
 
 uv_loop_t *main_loop;
+uv_mutex_t timer_lock;
 
 void uv_luat_main(void* args) {
     (void)args;
@@ -55,6 +56,7 @@ int main(int argc, char** argv) {
     // uv_replace_allocator(luat_heap_malloc, luat_heap_realloc, luat_heap_calloc, luat_heap_free);
     uv_loop_init(main_loop);
     uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
+    uv_mutex_init(&timer_lock);
 
     luat_pcconf_init();
 
@@ -67,6 +69,7 @@ int main(int argc, char** argv) {
     uv_timer_t t;
     uv_timer_init(main_loop, &t);
     uv_timer_start(&t, timer_nop, 1000, 1000);
+    uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
     uv_thread_create(&l_main, uv_luat_main, NULL);
 
     // uv_thread_join(&l_main);

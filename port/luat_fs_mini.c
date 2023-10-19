@@ -223,7 +223,7 @@ void *check_cmd_args(int index)
 	}
 	if (!memcmp(path + strlen(path) - 4, ".lua", 4))
 	{
-		LLOGD("把%s当做main.lua运行", path);
+		// LLOGD("把%s当做main.lua运行", path);
 		FILE *f = fopen(path, "rb");
 		if (!f)
 		{
@@ -256,7 +256,7 @@ void *check_cmd_args(int index)
 		FILE* f = NULL;
 		char buff[512] = {0};
 
-		LLOGD("目录模式 %s", path);
+		// LLOGD("加载目录 %s", path);
 		#ifdef LUA_USE_WINDOWS
 		memcpy(buff, path, strlen(path));
 		#else
@@ -269,7 +269,7 @@ void *check_cmd_args(int index)
 			// LLOGD("开始遍历目录 %s", path);
 			while ((ep = readdir(dp)) != NULL)
 			{
-				LLOGD("文件/目录 %s %d", ep->d_name, ep->d_type);
+				// LLOGD("文件/目录 %s %d", ep->d_name, ep->d_type);
 				if (ep->d_type != DT_REG) {
 					continue;
 				}

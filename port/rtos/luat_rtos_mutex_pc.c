@@ -56,7 +56,7 @@ LUAT_RET luat_mutex_unlock(void *mutex) {
     pc_mutex_t* m = (pc_mutex_t*)mutex;
     LLOGD("mutex unlock1 %p %d", m, m->lock);
     if (m->lock == 0) {
-        LLOGI("该mutex未加锁,不能unlock %p", mutex);
+        //LLOGI("该mutex未加锁,不能unlock %p", mutex);
         return;
     }
     uv_mutex_unlock(&m->m);

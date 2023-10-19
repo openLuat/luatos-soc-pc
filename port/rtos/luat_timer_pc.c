@@ -14,6 +14,8 @@ extern uv_loop_t *main_loop;
 #define TIMER_ID_MAX (1024)
 static uv_timer_t* timers[TIMER_ID_MAX];
 
+extern uv_mutex_t timer_lock;
+
 static int get_free_timer_id(void)
 {
     for (size_t i = 0; i < TIMER_ID_MAX; i++)
@@ -90,11 +92,13 @@ static void timer_cb(uv_timer_t *handle)
 
 int luat_timer_start(luat_timer_t *timer)
 {
+    uv_mutex_lock(&timer_lock);
     int ret = 0;
     int id = get_free_timer_id();
     if (id < 0)
     {
         LLOGE("too many timer created");
+        uv_mutex_unlock(&timer_lock);
         return -1;
     }
     timers[id] = luat_heap_malloc(sizeof(uv_timer_t));
@@ -102,6 +106,10 @@ int luat_timer_start(luat_timer_t *timer)
     ret = uv_timer_init(main_loop, timer_req);
     if (ret) {
         LLOGE("uv_timer_init %d", ret);
+        luat_heap_free(timers[id]);
+        timers[id] = NULL;
+        uv_mutex_unlock(&timer_lock);
+        return -1;
     }
     // LLOGD("uv_timer_init %d", ret);
     timer_req->data = timer;
@@ -112,10 +120,12 @@ int luat_timer_start(luat_timer_t *timer)
     }
     // else
     //     LLOGD("timer[%d] 启动成功 %d %d", id, timer->timeout, timer->repeat);
+    uv_mutex_unlock(&timer_lock);
     return ret;
 }
 int luat_timer_stop(luat_timer_t *timer)
 {
+    uv_mutex_lock(&timer_lock);
     // LLOGD("timer stop %d", timer);
     uv_timer_t *timer_req = timer->os_timer;
     int ret = 0;
@@ -128,19 +138,26 @@ int luat_timer_stop(luat_timer_t *timer)
                 LLOGI("uv_timer_stop %d", ret);
             luat_heap_free(timer_req);
             timers[i] = NULL;
+            uv_mutex_unlock(&timer_lock);
             return 0;
         }
     }
     // LLOGD("没有找到对应的timer");
+    uv_mutex_unlock(&timer_lock);
     return -1;
 }
 luat_timer_t *luat_timer_get(size_t timer_id)
 {
     // LLOGD("timer get");
+    uv_mutex_lock(&timer_lock);
     uv_timer_t *timer = get_timer_by_id(timer_id);
-    if (timer == NULL)
+    if (timer == NULL) {
+        uv_mutex_unlock(&timer_lock);
         return NULL;
-    return (luat_timer_t *)timer->data;
+    }
+    luat_timer_t * t = (luat_timer_t *)timer->data;
+    uv_mutex_unlock(&timer_lock);
+    return t;
 }
 
 void luat_timer_us_delay(size_t us)
