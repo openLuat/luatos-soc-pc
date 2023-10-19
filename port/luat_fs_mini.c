@@ -195,7 +195,7 @@ void *check_cmd_args(int index)
 	// int ret = 0;
 	void *ptr = NULL;
 	const char *path = cmdline_argv[index];
-	if (strlen(path) < 4)
+	if (strlen(path) < 4 || strlen(path) >= 512)
 	{
 		return NULL;
 	}
@@ -224,6 +224,7 @@ void *check_cmd_args(int index)
 	if (!memcmp(path + strlen(path) - 4, ".lua", 4))
 	{
 		// LLOGD("把%s当做main.lua运行", path);
+		char tmpname[512] = {0};
 		FILE *f = fopen(path, "rb");
 		if (!f)
 		{
@@ -242,8 +243,19 @@ void *check_cmd_args(int index)
 		}
 		fread(tmp, 1, len, f);
 		fclose(f);
+		for (size_t i = strlen(path); i > 0; i--)
+		{
+			if (path[i-1] == '/' || path[i-1] == '\\') {
+				memcpy(tmpname, path + i, strlen(path) - 1);
+				break;
+			}
+		}
+		if (tmpname[0] == 0x00) {
+			memcpy(tmpname, path, strlen(path));
+		}
+
 		// 开始合成luadb结构
-		luadb_addfile("main.lua", tmp, len);
+		luadb_addfile(tmpname, tmp, len);
 		luat_heap_free(tmp);
 		return luadb_ptr;
 	}
