@@ -214,6 +214,7 @@ void *check_cmd_args(int index)
 		ptr = luat_heap_malloc(len);
 		if (ptr == NULL)
 		{
+			fclose(f);
 			LLOGE("luadb镜像文件太大,内存放不下 %s", path);
 			return NULL;
 		}
@@ -238,6 +239,7 @@ void *check_cmd_args(int index)
 		char *tmp = luat_heap_malloc(len);
 		if (tmp == NULL)
 		{
+			fclose(f);
 			LLOGE("lua文件太大,内存放不下 %s", path);
 			return NULL;
 		}
