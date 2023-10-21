@@ -2727,7 +2727,6 @@
 
 /* Memory buffer allocator options */
 //#define MBEDTLS_MEMORY_ALIGN_MULTIPLE      4 /**< Align on multiples of this value */
-void tls_mem_free2(void* p);
 /* Platform options */
 //#define MBEDTLS_PLATFORM_STD_MEM_HDR   <stdlib.h> /**< Header to include if MBEDTLS_PLATFORM_NO_STD_FUNCTIONS is defined. Don't define if no header is needed. */
 // #define MBEDTLS_PLATFORM_STD_CALLOC        tls_mem_calloc /**< Default allocator to use, can be undefined */
