@@ -1,0 +1,26 @@
+name: osx
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-12
+    steps:
+    - uses: actions/checkout@v4
+    - name: prepare software
+      run: |
+        brew install git xmake libtool
+    - name: clone LuatOS
+      run: |
+        cd ..
+        git clone https://github.com/openLuat/LuatOS.git
+    - name: build
+      run: |
+        xmake -w -y
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: luatos_osx
+        path: build/out
