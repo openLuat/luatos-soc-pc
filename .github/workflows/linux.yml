@@ -30,8 +30,12 @@ jobs:
         LINUX_BITS: ${{ matrix.linux_bits }}
       run: |
         sh build_linux_${LINUX_BITS}.sh
+    - name: Tar files
+      env:
+        LINUX_BITS: ${{ matrix.linux_bits }}
+      run: tar -cvf luatos_linux_${LINUX_BITS}.tar build/out
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
         name: luatos_linux_${{ matrix.linux_bits }}
-        path: build/out
+        path: luatos_linux_${{ matrix.linux_bits }}.tar

@@ -19,8 +19,10 @@ jobs:
     - name: build
       run: |
         xmake -w -y
+    - name: Tar files
+      run: tar -cvf luatos_osx.tar build/out
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
         name: luatos_osx
-        path: build/out
+        path: luatos_osx.tar
