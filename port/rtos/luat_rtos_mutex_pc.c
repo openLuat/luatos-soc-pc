@@ -41,27 +41,29 @@ void *luat_mutex_create(void) {
 }
 LUAT_RET luat_mutex_lock(void *mutex) {
     if (mutex == NULL) {
-        return;
+        return -1;
     }
     pc_mutex_t* m = (pc_mutex_t*)mutex;
     LLOGD("mutex lock1 %p %d", m, m->lock);
     uv_mutex_lock(&m->m);
     m->lock ++;
     LLOGD("mutex lock2 %p %d", m, m->lock);
+    return 0;
 }
 
 LUAT_RET luat_mutex_unlock(void *mutex) {
     if (mutex == NULL)
-        return;
+        return -1;
     pc_mutex_t* m = (pc_mutex_t*)mutex;
     LLOGD("mutex unlock1 %p %d", m, m->lock);
     if (m->lock == 0) {
         //LLOGI("该mutex未加锁,不能unlock %p", mutex);
-        return;
+        return -2;
     }
     uv_mutex_unlock(&m->m);
     m->lock --;
     LLOGD("mutex unlock2 %p %d", m, m->lock);
+    return 0;
 }
 
 void luat_mutex_release(void *mutex) {
