@@ -1,0 +1,41 @@
+name: linux
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        linux_bits: ["32bit", "64bit"]
+      fail-fast: true
+    steps:
+    - uses: actions/checkout@v4
+    - name: prepare software
+      run: |
+        sudo apt-get update
+        sudo apt install git gcc-multilib libc6 libgcc1 libstdc++5 libstdc++6 p7zip-full binutils llvm libsdl2-dev -y
+        sudo apt install libncurses5-dev cmake -y
+        sudo add-apt-repository ppa:xmake-io/xmake -y
+        sudo apt update
+        sudo apt install xmake
+    - name: clone LuatOS
+      run: |
+        cd ..
+        git clone https://github.com/openLuat/LuatOS.git
+    - name: build
+      env:
+        LINUX_BITS: ${{ matrix.linux_bits }}
+      run: |
+        sh build_linux_${LINUX_BITS}.sh
+    - name: Tar files
+      env:
+        LINUX_BITS: ${{ matrix.linux_bits }}
+      run: tar -cvf luatos_linux_${LINUX_BITS}.tar build/out
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: luatos_linux_${{ matrix.linux_bits }}
+        path: luatos_linux_${{ matrix.linux_bits }}.tar
