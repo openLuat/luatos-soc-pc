@@ -4,6 +4,7 @@
 #include "luat_uart.h"
 #include "luat_malloc.h"
 #include "printf.h"
+#include "luat_mcu.h"
 
 #include <stdio.h>
 
@@ -43,41 +44,47 @@ void luat_log_log(int level, const char* tag, const char* _fmt, ...) {
     if (luat_log_level_cur > level) return;
     char buff[LOGLOG_SIZE] = {0};
     char *tmp = (char *)buff;
+    // uint64_t t = luat_mcu_tick64();
+    // uint64_t sec = t / 1000 / 1000;
+    // uint32_t ms = (uint32_t)((t / 1000) % 1000);
+    // sprintf_(tmp, "[%08llu", sec);
+    // sprintf_(tmp + strlen(tmp), ".%03lu] ", ms);
+    // uint64_t s = t / 1000 / 1000;
+    // sprintf_(tmp, "[%08lu.%03lu] ", t / 1000, t % 1000);
+    // tmp += strlen(tmp);
     switch (level)
         {
         case LUAT_LOG_DEBUG:
-            buff[0] = 'D';
+            tmp[0] = 'D';
             break;
         case LUAT_LOG_INFO:
-            buff[0] = 'I';
+            tmp[0] = 'I';
             break;
         case LUAT_LOG_WARN:
-            buff[0] = 'W';
+            tmp[0] = 'W';
             break;
         case LUAT_LOG_ERROR:
-            buff[0] = 'E';
+            tmp[0] = 'E';
             break;
         default:
-            buff[0] = '?';
+            tmp[0] = '?';
             break;
         }
-    buff[1] = '/';
-    tmp += 2;
+    tmp ++;
+    tmp[0] = '/';
+    tmp ++;
     memcpy(tmp, tag, strlen(tag));
-    buff[2+strlen(tag)] = ' ';
-    tmp += strlen(tag) + 1;
+    tmp += strlen(tag);
+    tmp[0] = ' ';
+    tmp ++;
 
+    size_t len = 0;
     va_list args;
     va_start(args, _fmt);
-    size_t len = vsnprintf_(tmp, LOGLOG_SIZE, _fmt, args);
+    len = vsnprintf_(tmp, LOGLOG_SIZE - strlen(buff), _fmt, args);
     va_end(args);
     if (len > 0) {
         len = strlen(buff);
-        // if (len > LOGLOG_SIZE - 2)
-        //     len = LOGLOG_SIZE - 2;
-        // buff[len] = '\r';
-        // buff[len+1] = '\n';
-        // luat_nprint(buff, len+2);
         if (len > LOGLOG_SIZE - 1)
             len = LOGLOG_SIZE - 1;
         buff[len] = '\n';
