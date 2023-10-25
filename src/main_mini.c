@@ -21,7 +21,8 @@ uint8_t luavm_heap[LUAT_HEAP_SIZE] = {0};
 
 int cmdline_argc;
 char** cmdline_argv;
-uv_timespec64_t boot_ts;
+// uv_timespec64_t boot_ts;
+extern uint64_t uv_startup_ns;
 
 int lua_main (int argc, char **argv);
 
@@ -55,7 +56,8 @@ int main(int argc, char** argv) {
     main_loop = malloc(sizeof(uv_loop_t));
     // uv_replace_allocator(luat_heap_malloc, luat_heap_realloc, luat_heap_calloc, luat_heap_free);
     uv_loop_init(main_loop);
-    uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
+    // uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
+    uv_startup_ns = uv_hrtime();
     uv_mutex_init(&timer_lock);
 
     luat_pcconf_init();
@@ -69,7 +71,7 @@ int main(int argc, char** argv) {
     uv_timer_t t;
     uv_timer_init(main_loop, &t);
     uv_timer_start(&t, timer_nop, 1000, 1000);
-    uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
+    // uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
     // uv_thread_create(&l_main, uv_luat_main, NULL);
 
     // uv_thread_join(&l_main);

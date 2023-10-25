@@ -34,16 +34,10 @@ uint32_t luat_mcu_hz(void) {
     return 1;
 }
 
+uint64_t uv_startup_ns;
 uint64_t luat_mcu_tick64(void) {
-    uv_timespec64_t ts;
-    int ret = uv_clock_gettime(UV_CLOCK_MONOTONIC, &ts);
-    if (ret) {
-        return 0;
-    }
-    uint64_t tmp = ts.tv_sec * 1000000L + ts.tv_nsec;
-    uint64_t tmp2 = boot_ts.tv_sec * 1000000L + boot_ts.tv_nsec;
-    //LLOGD("tick64 %llu", tmp - tmp2);
-    return tmp - tmp2;
+    uint64_t ns = uv_hrtime();
+    return (ns - uv_startup_ns) / 1000;
 }
 
 int luat_mcu_us_period(void) {
