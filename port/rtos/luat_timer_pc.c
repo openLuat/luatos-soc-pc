@@ -127,7 +127,7 @@ int luat_timer_stop(luat_timer_t *timer)
 {
     uv_mutex_lock(&timer_lock);
     // LLOGD("timer stop %d", timer);
-    uv_timer_t *timer_req = timer->os_timer;
+    uv_timer_t *timer_req = (uv_timer_t *)timer->os_timer;
     int ret = 0;
     for (size_t i = 0; i < TIMER_ID_MAX; i++)
     {

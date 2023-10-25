@@ -11,6 +11,7 @@
 static uv_queue_item_t head;
 
 static uv_mutex_t m;
+extern uv_loop_t *main_loop;
 
 void luat_msgbus_init(void)
 {
@@ -19,6 +20,7 @@ void luat_msgbus_init(void)
 }
 uint32_t luat_msgbus_put(rtos_msg_t *msg, size_t timeout)
 {
+    (void)timeout;
     // LLOGD("luat_msgbus_put %p %d", msg, timeout);
     uv_queue_item_t *item = luat_heap_malloc(sizeof(uv_queue_item_t) + sizeof(rtos_msg_t));
     if (item == NULL)
@@ -37,10 +39,13 @@ uint32_t luat_msgbus_put(rtos_msg_t *msg, size_t timeout)
 uint32_t luat_msgbus_get(rtos_msg_t *msg, size_t timeout)
 {
     // LLOGD("luat_msgbus_get %d", timeout);
+    (void)timeout;
     uv_queue_item_t *item = luat_heap_malloc(sizeof(uv_queue_item_t) + sizeof(rtos_msg_t));
     int ret = 0;
+    int ret2 = 0;
     while (1)
     {
+        ret2 = uv_run(main_loop, UV_RUN_NOWAIT);
         uv_mutex_lock(&m);
         ret = luat_queue_pop(&head, item);
         uv_mutex_unlock(&m);
@@ -50,16 +55,10 @@ uint32_t luat_msgbus_get(rtos_msg_t *msg, size_t timeout)
             luat_heap_free(item);
             return 0;
         }
-        // 读不到, 只能返回错误了
-        if (timeout == 0)
-        {
-            return 1;
-        }
-        if (timeout > 0 && timeout != (size_t)(-1))
-        {
-            timeout--;
-        }
-        uv_sleep(1);
+        if (ret2 == 0)
+            uv_sleep(2);
+        else
+            uv_sleep(1);
     }
     return 1;
 }
@@ -70,6 +69,6 @@ uint32_t luat_msgbus_freesize(void)
 
 uint8_t luat_msgbus_is_empty(void)
 {
-    // return head.next == NULL ? 1 : 0;
-    return 0;
+    return head.next == NULL ? 1 : 0;
+    // return 0;
 }

@@ -65,15 +65,16 @@ int main(int argc, char** argv) {
     luat_fs_init();
     luat_network_init();
 
-    uv_thread_t l_main;
+    // uv_thread_t l_main;
     uv_timer_t t;
     uv_timer_init(main_loop, &t);
     uv_timer_start(&t, timer_nop, 1000, 1000);
     uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
-    uv_thread_create(&l_main, uv_luat_main, NULL);
+    // uv_thread_create(&l_main, uv_luat_main, NULL);
 
     // uv_thread_join(&l_main);
-    uv_run(main_loop, UV_RUN_DEFAULT);
+    // uv_run(main_loop, UV_RUN_DEFAULT);
+    uv_luat_main(NULL);
 
     uv_loop_close(main_loop);
     free(main_loop);
