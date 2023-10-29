@@ -2,6 +2,7 @@
 #include "luat_msgbus.h"
 #include "luat_fs.h"
 #include "luat_timer.h"
+#include "luat_malloc.h"
 #include <stdlib.h>
 #include <stdlib.h>
 
@@ -155,4 +156,19 @@ void luat_ota_reboot(int timeout_ms) {
   if (timeout_ms > 0)
     luat_timer_mdelay(timeout_ms);
   exit(0);
+}
+
+///------------------------------------
+
+#include "uv.h"
+
+static void on_free(uv_handle_t* ptr) {
+  luat_heap_free(ptr);
+}
+
+
+void free_uv_handle(void* ptr) {
+  if (ptr == NULL)
+    return;
+  uv_close((uv_handle_t*)ptr, on_free);
 }

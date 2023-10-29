@@ -24,7 +24,7 @@ char** cmdline_argv;
 // uv_timespec64_t boot_ts;
 extern uint64_t uv_startup_ns;
 
-int lua_main (int argc, char **argv);
+int lua_main (int argc, char** argv);
 
 void luat_log_init_win32(void);
 void luat_uart_initial_win32(void);
@@ -32,6 +32,8 @@ void luat_network_init(void);
 
 uv_loop_t *main_loop;
 uv_mutex_t timer_lock;
+
+int luat_cmd_parse(int argc, char** argv);
 
 void uv_luat_main(void* args) {
     (void)args;
@@ -53,6 +55,7 @@ static void timer_nop(uv_timer_t *handle) {
 int main(int argc, char** argv) {
     cmdline_argc = argc;
     cmdline_argv = argv;
+
     main_loop = malloc(sizeof(uv_loop_t));
     // uv_replace_allocator(luat_heap_malloc, luat_heap_realloc, luat_heap_calloc, luat_heap_free);
     uv_loop_init(main_loop);
@@ -67,15 +70,17 @@ int main(int argc, char** argv) {
     luat_fs_init();
     luat_network_init();
 
+    
+    int ret = luat_cmd_parse(cmdline_argc, cmdline_argv);
+    if (ret) {
+        return ret;
+    }
+
     // uv_thread_t l_main;
     uv_timer_t t;
     uv_timer_init(main_loop, &t);
     uv_timer_start(&t, timer_nop, 1000, 1000);
-    // uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
-    // uv_thread_create(&l_main, uv_luat_main, NULL);
 
-    // uv_thread_join(&l_main);
-    // uv_run(main_loop, UV_RUN_DEFAULT);
     uv_luat_main(NULL);
 
     uv_loop_close(main_loop);

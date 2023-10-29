@@ -1,6 +1,7 @@
 #include "luat_base.h"
 #include "luat_rtos.h"
 #include "luat_malloc.h"
+#include "luat_pcconf.h"
 
 #include "uv.h"
 
@@ -81,7 +82,7 @@ void luat_release_rtos_timer(void *timer) {
     uv_timer_t *t = (uv_timer_t *)timer;
     uv_timer_stop(t);
     luat_heap_free(t->data);
-    luat_heap_free(t);
+    free_uv_handle(t);
     uv_mutex_unlock(&timer_lock);
 }
 
