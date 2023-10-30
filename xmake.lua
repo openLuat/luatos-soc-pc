@@ -26,8 +26,11 @@ if os.getenv("VM_64bit") == "1" then
     add_defines("LUAT_CONF_VM_64bit")
 end
 
--- add_requires("libsdl")
--- add_packages("libsdl")
+if os.getenv("LUAT_USE_GUI") == "y" then
+    add_defines("LUAT_USE_GUI=1")
+    add_requires("libsdl")
+    add_packages("libsdl")
+end
 
 if is_host("windows") then
     -- add_defines("LUA_USE_WINDOWS")
@@ -188,4 +191,34 @@ target("luatos-lua")
     add_includedirs(luatos.."components/network/errdump",{public = true})
     add_files(luatos.."components/network/errdump/*.c")
     
+    if os.getenv("LUAT_USE_GUI") == "y" then
+        add_files("ui/*.c")
+
+        -- sdl2
+        add_includedirs(luatos.."components/ui/sdl2")
+        add_files(luatos.."components/ui/sdl2/*.c")
+        -- u8g2
+        add_includedirs(luatos.."components/u8g2")
+        add_files(luatos.."components/u8g2/*.c")
+        -- lcd
+        add_includedirs(luatos.."components/lcd")
+        add_files(luatos.."components/lcd/*.c")
+        -- lvgl
+        add_includedirs(luatos.."components/lvgl")
+        add_includedirs(luatos.."components/lvgl/binding")
+        add_includedirs(luatos.."components/lvgl/gen")
+        add_includedirs(luatos.."components/lvgl/src")
+        add_includedirs(luatos.."components/lvgl/font")
+        add_includedirs(luatos.."components/lvgl/src/lv_font")
+        add_includedirs(luatos.."components/lvgl/sdl2")
+        add_files(luatos.."components/lvgl/**.c")
+        -- 默认不编译lv的demos, 节省大量的编译时间
+        remove_files(luatos.."components/lvgl/lv_demos/**.c")
+
+        -- qrcode 和 tjpgd
+        add_includedirs(luatos.."components/qrcode")
+        add_includedirs(luatos.."components/tjpgd")
+        add_files(luatos.."components/tjpgd/*.c")
+        add_files(luatos.."components/qrcode/*.c")  
+    end
 target_end()

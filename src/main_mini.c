@@ -16,6 +16,11 @@
 
 #include "uv.h"
 
+#ifdef LUAT_USE_LVGL
+uv_timer_t lvgl_timer;
+#include "lvgl.h"
+#endif
+
 #define LUAT_HEAP_SIZE (1024*1024)
 uint8_t luavm_heap[LUAT_HEAP_SIZE] = {0};
 
@@ -34,6 +39,8 @@ uv_loop_t *main_loop;
 uv_mutex_t timer_lock;
 
 int luat_cmd_parse(int argc, char** argv);
+static int luat_lvg_handler(lua_State* L, void* ptr);
+static void lvgl_timer_cb(uv_timer_t* lvgl_timer);
 
 void uv_luat_main(void* args) {
     (void)args;
@@ -76,6 +83,12 @@ int main(int argc, char** argv) {
         return ret;
     }
 
+    #ifdef LUAT_USE_LVGL
+    lv_init();
+    uv_timer_init(main_loop, &lvgl_timer);
+    uv_timer_start(&lvgl_timer, lvgl_timer_cb, 25, 25);
+    #endif
+
     // uv_thread_t l_main;
     uv_timer_t t;
     uv_timer_init(main_loop, &t);
@@ -87,3 +100,22 @@ int main(int argc, char** argv) {
     free(main_loop);
     return 0;
 }
+
+// UI相关
+
+#ifdef LUAT_USE_LVGL
+static int luat_lvg_handler(lua_State* L, void* ptr) {
+    (void)L;
+    (void)ptr;
+    lv_tick_inc(25);
+    lv_task_handler();
+    return 0;
+}
+static void lvgl_timer_cb(uv_timer_t* lvgl_timer) {
+    rtos_msg_t msg = {
+        .handler = luat_lvg_handler
+    };
+    luat_msgbus_put(&msg, 0);
+}
+#endif
+

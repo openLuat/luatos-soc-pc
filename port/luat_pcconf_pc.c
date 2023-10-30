@@ -13,10 +13,15 @@
 #include "luat_log.h"
 
 luat_pcconf_t g_pcconf;
+extern uv_loop_t *main_loop;
 extern const luat_uart_drv_opts_t* uart_drvs[];
 extern const luat_uart_drv_opts_t uart_udp;
 
 void luat_pcconf_init(void) {
+    #ifdef LUAT_USE_LVGL
+    
+    #endif
+
     memcpy(g_pcconf.mcu_unique_id, "LuatOS@PC", strlen("LuatOS@PC"));
     g_pcconf.mcu_unique_id_len = strlen("LuatOS@PC");
     
@@ -28,4 +33,3 @@ void luat_pcconf_init(void) {
 void luat_pcconf_save(void) {
 
 }
-

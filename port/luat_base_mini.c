@@ -118,6 +118,26 @@ static const luaL_Reg loadedlibs[] = {
   // {"ftp", luaopen_ftp},
   {"errDump", luaopen_errdump},
 #endif
+// UI类
+#ifdef LUAT_USE_DISP
+  {"disp",  luaopen_disp},              // OLED显示模块
+#endif
+#ifdef LUAT_USE_U8G2
+  {"u8g2", luaopen_u8g2},              // u8g2
+#endif
+
+#ifdef LUAT_USE_EINK
+  {"eink",  luaopen_eink},              // 电子墨水屏
+#endif
+#ifdef LUAT_USE_FATFS
+  {"fatfs",  luaopen_fatfs},              // SD卡/tf卡
+#endif
+#ifdef LUAT_USE_LVGL
+  {"lvgl",   luaopen_lvgl},
+#endif
+#ifdef LUAT_USE_LCD
+  {"lcd",    luaopen_lcd},
+#endif
   {NULL, NULL}
 };
 
