@@ -15,7 +15,6 @@ extern const struct luat_vfs_filesystem vfs_fs_ram;
 extern int cmdline_argc;
 extern char **cmdline_argv;
 
-
 char *luadb_ptr;
 static size_t luadb_offset;
 static int luadb_init(void)
@@ -131,56 +130,166 @@ static int luadb_addfile(const char *name, char *data, size_t len)
 	return 0;
 }
 
-void *check_cmd_args(int index);
-int luat_cmd_parse(int argc, char** argv) {
+void *check_cmd_args(const char *path);
+
+static int load_luadb(const char *path);
+static int load_luatools(const char *path);
+
+static int is_opts(const char *key, const char *arg)
+{
+	if (strlen(key) >= strlen(arg))
+	{
+		return 0;
+	}
+	return memcmp(key, arg, strlen(key)) == 0;
+}
+
+int luat_cmd_parse(int argc, char **argv)
+{
 	if (cmdline_argc == 1)
 	{
 		return 0;
 	}
-	for (size_t i = 1; i < (size_t)cmdline_argc; i++)
+	for (size_t i = 1; i < (size_t)argc; i++)
 	{
-		const char *argv = cmdline_argv[i];
-		if (argv[0] == '-') {
+		const char *arg = argv[i];
+		if (is_opts("--load_luadb=", arg))
+		{
+			if (load_luadb(arg + strlen("--load_luadb=")))
+			{
+				LLOGE("加载luadb镜像失败");
+				return -1;
+			}
 			continue;
 		}
-		check_cmd_args(i);
+		if (is_opts("--load_luatools=", arg))
+		{
+			if (load_luatools(arg + strlen("--load_luatools=")))
+			{
+				LLOGE("加载luatools项目文件失败");
+				return -1;
+			}
+			continue;
+		}
+		if (arg[0] == '-')
+		{
+			continue;
+		}
+		check_cmd_args(arg);
 	}
 	return 0;
 }
 
-void *check_cmd_args(int index)
+static int load_luadb(const char *path)
+{
+	long len = 0;
+	FILE *f = fopen(path, "rb");
+	if (!f)
+	{
+		LLOGE("无法打开luadb镜像文件 %s", path);
+		return -1;
+	}
+	fseek(f, 0, SEEK_END);
+	len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	char *ptr = luat_heap_malloc(len);
+	if (ptr == NULL)
+	{
+		fclose(f);
+		LLOGE("luadb镜像文件太大,内存放不下 %s", path);
+		return -1;
+	}
+	fread(ptr, len, 1, f);
+	fclose(f);
+	luadb_ptr = ptr;
+	luadb_offset = len;
+	return 0;
+}
+
+
+static int load_luatools(const char *path)
+{
+	long len = 0;
+	FILE *f = fopen(path, "rb");
+	if (!f)
+	{
+		LLOGE("无法打开luatools项目文件 %s", path);
+		return -1;
+	}
+	fseek(f, 0, SEEK_END);
+	len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	char *ptr = luat_heap_malloc(len + 1);
+	if (ptr == NULL)
+	{
+		fclose(f);
+		LLOGE("luatools项目文件太大,内存放不下 %s", path);
+		return -1;
+	}
+	fread(ptr, len, 1, f);
+	fclose(f);
+
+	ptr[len] = 0;
+
+	char *ret = ptr;
+	char dirline[512] = {0};
+	char rpath[1024] = {0};
+	size_t retlen = 0;
+	while (ptr[0] != 0x00) {
+		// LLOGD("ptr %c", ptr[0]);
+		if (ptr[0] == '\r' || ptr[0] == '\n') {
+			if (ret != ptr) {
+				ptr[0] = 0x00;
+				retlen = strlen(ret);
+				// LLOGD("检索到的行 %s", ret);
+				if (!strcmp("[info]", ret)) {
+					
+				}
+				else if (retlen > 5) {
+					if (ret[0] == '[' && ret[retlen - 1] == ']') {
+						LLOGD("目录行 %s", ret);
+						memcpy(dirline, ret + 1, retlen - 2);
+						dirline[retlen - 2] = 0x00;
+					}
+					else {
+						if (dirline[0]) {
+							for (size_t i = 0; i < strlen(ret); i++)
+							{
+								if (ret[i] == ' ' || ret[i] == '=') {
+									ret[i] = 0;
+									memset(rpath, 0, 1024);
+									memcpy(rpath, dirline, strlen(dirline));
+									#ifdef LUA_USE_WINDOWS
+									rpath[strlen(dirline)] = '\\';
+									#else
+									rpath[strlen(dirline)] = '/';
+									#endif
+									memcpy(rpath + strlen(rpath), ret, strlen(ret));
+									LLOGI("加载文件 %s", rpath);
+									if (check_cmd_args(rpath) == NULL )
+										return -2;
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+			ret = ptr + 1;
+		}
+		ptr ++;
+	}
+	return 0;
+}
+
+void *check_cmd_args(const char *path)
 {
 	size_t len = 0;
-	// int ret = 0;
-	void *ptr = NULL;
-	const char *path = cmdline_argv[index];
 	if (strlen(path) < 4 || strlen(path) >= 512)
 	{
 		return NULL;
 	}
 
-	if (!memcmp(path + strlen(path) - 4, ".bin", 4))
-	{
-		FILE *f = fopen(path, "rb");
-		if (!f)
-		{
-			LLOGE("无法打开luadb镜像文件 %s", path);
-			return NULL;
-		}
-		fseek(f, 0, SEEK_END);
-		len = ftell(f);
-		fseek(f, 0, SEEK_SET);
-		ptr = luat_heap_malloc(len);
-		if (ptr == NULL)
-		{
-			fclose(f);
-			LLOGE("luadb镜像文件太大,内存放不下 %s", path);
-			return NULL;
-		}
-		fread(ptr, len, 1, f);
-		fclose(f);
-		return ptr;
-	}
 	if (!memcmp(path + strlen(path) - 4, ".lua", 4))
 	{
 		// LLOGD("把%s当做main.lua运行", path);
@@ -206,12 +315,14 @@ void *check_cmd_args(int index)
 		fclose(f);
 		for (size_t i = strlen(path); i > 0; i--)
 		{
-			if (path[i-1] == '/' || path[i-1] == '\\') {
+			if (path[i - 1] == '/' || path[i - 1] == '\\')
+			{
 				memcpy(tmpname, path + i, strlen(path) - 1);
 				break;
 			}
 		}
-		if (tmpname[0] == 0x00) {
+		if (tmpname[0] == 0x00)
+		{
 			memcpy(tmpname, path, strlen(path));
 		}
 
@@ -226,15 +337,15 @@ void *check_cmd_args(int index)
 		DIR *dp;
 		struct dirent *ep;
 		// int index = 0;
-		FILE* f = NULL;
+		FILE *f = NULL;
 		char buff[512] = {0};
 
-		// LLOGD("加载目录 %s", path);
-		#ifdef LUA_USE_WINDOWS
+// LLOGD("加载目录 %s", path);
+#ifdef LUA_USE_WINDOWS
 		memcpy(buff, path, strlen(path));
-		#else
+#else
 		memcpy(buff, path, strlen(path) - 1);
-		#endif;
+#endif;
 		dp = opendir(buff);
 		// LLOGD("目录打开 %p", dp);
 		if (dp != NULL)
@@ -243,31 +354,36 @@ void *check_cmd_args(int index)
 			while ((ep = readdir(dp)) != NULL)
 			{
 				// LLOGD("文件/目录 %s %d", ep->d_name, ep->d_type);
-				if (ep->d_type != DT_REG) {
+				if (ep->d_type != DT_REG)
+				{
 					continue;
 				}
-				#ifdef LUA_USE_WINDOWS
+#ifdef LUA_USE_WINDOWS
 				sprintf(buff, "%s\\%s", path, ep->d_name);
-				#else
+#else
 				sprintf(buff, "%s/%s", path, ep->d_name);
-				#endif
+#endif
 				// index++;
 				f = fopen(buff, "rb");
-				if (f == NULL) {
+				if (f == NULL)
+				{
 					LLOGW("打开文件失败,跳过 %s", buff);
 				}
 				fseek(f, 0, SEEK_END);
 				len = ftell(f);
 				fseek(f, 0, SEEK_SET);
-				char* tmp = luat_heap_malloc(len);
-				if (tmp == NULL) {
+				char *tmp = luat_heap_malloc(len);
+				if (tmp == NULL)
+				{
 					LLOGE("内存不足,无法加载文件 %s", buff);
 				}
-				else {
+				else
+				{
 					fread(tmp, 1, len, f);
 				}
 				fclose(f);
-				if (tmp) {
+				if (tmp)
+				{
 					luadb_addfile(ep->d_name, tmp, len);
 					luat_heap_free(tmp);
 				}

@@ -33,7 +33,7 @@ if os.getenv("LUAT_USE_GUI") == "y" then
 end
 
 if is_host("windows") then
-    add_defines("LUA_USE_WINDOWS")
+    -- add_defines("LUA_USE_WINDOWS")
     add_cflags("/utf-8")
     add_includedirs("win32")
     -- add_ldflags("-static")
