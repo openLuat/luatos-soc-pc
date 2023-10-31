@@ -2,6 +2,7 @@
 #include "luat_base.h"
 #include "luat_fs.h"
 #include "luat_malloc.h"
+#include "lundump.h"
 
 #define LUAT_LOG_TAG "fs"
 #include "luat_log.h"
@@ -130,7 +131,7 @@ static int luadb_addfile(const char *name, char *data, size_t len)
 	return 0;
 }
 
-void *check_cmd_args(const char *path);
+void *check_file_path(const char *path);
 
 static int load_luadb(const char *path);
 static int load_luatools(const char *path);
@@ -175,7 +176,7 @@ int luat_cmd_parse(int argc, char **argv)
 		{
 			continue;
 		}
-		check_cmd_args(arg);
+		check_file_path(arg);
 	}
 	return 0;
 }
@@ -206,7 +207,6 @@ static int load_luadb(const char *path)
 	return 0;
 }
 
-
 static int load_luatools(const char *path)
 {
 	long len = 0;
@@ -235,38 +235,46 @@ static int load_luatools(const char *path)
 	char dirline[512] = {0};
 	char rpath[1024] = {0};
 	size_t retlen = 0;
-	while (ptr[0] != 0x00) {
+	while (ptr[0] != 0x00)
+	{
 		// LLOGD("ptr %c", ptr[0]);
-		if (ptr[0] == '\r' || ptr[0] == '\n') {
-			if (ret != ptr) {
+		if (ptr[0] == '\r' || ptr[0] == '\n')
+		{
+			if (ret != ptr)
+			{
 				ptr[0] = 0x00;
 				retlen = strlen(ret);
 				// LLOGD("检索到的行 %s", ret);
-				if (!strcmp("[info]", ret)) {
-					
+				if (!strcmp("[info]", ret))
+				{
 				}
-				else if (retlen > 5) {
-					if (ret[0] == '[' && ret[retlen - 1] == ']') {
+				else if (retlen > 5)
+				{
+					if (ret[0] == '[' && ret[retlen - 1] == ']')
+					{
 						LLOGD("目录行 %s", ret);
 						memcpy(dirline, ret + 1, retlen - 2);
 						dirline[retlen - 2] = 0x00;
 					}
-					else {
-						if (dirline[0]) {
+					else
+					{
+						if (dirline[0])
+						{
 							for (size_t i = 0; i < strlen(ret); i++)
 							{
-								if (ret[i] == ' ' || ret[i] == '=') {
+								if (ret[i] == ' ' || ret[i] == '=')
+								{
 									ret[i] = 0;
 									memset(rpath, 0, 1024);
 									memcpy(rpath, dirline, strlen(dirline));
-									#ifdef LUA_USE_WINDOWS
+#ifdef LUA_USE_WINDOWS
 									rpath[strlen(dirline)] = '\\';
-									#else
+#else
 									rpath[strlen(dirline)] = '/';
-									#endif
+#endif
 									memcpy(rpath + strlen(rpath), ret, strlen(ret));
 									LLOGI("加载文件 %s", rpath);
-									if (check_cmd_args(rpath) == NULL )
+									if (check_file_path(rpath) == NULL)
 										return -2;
 									break;
 								}
@@ -277,59 +285,149 @@ static int load_luatools(const char *path)
 			}
 			ret = ptr + 1;
 		}
-		ptr ++;
+		ptr++;
 	}
 	return 0;
 }
 
-void *check_cmd_args(const char *path)
+typedef struct luac_ctx
+{
+	char *ptr;
+	size_t len;
+} luac_ctx_t;
+
+static int writer(lua_State *L, const void *p, size_t size, void *u)
+{
+	UNUSED(L);
+	// LLOGD("写入部分数据 %p %d", p, size);
+	luac_ctx_t *ctx = (luac_ctx_t *)u;
+	if (ctx->ptr == NULL)
+	{
+		ctx->ptr = luat_heap_malloc(size);
+		ctx->len = size;
+		memcpy(ctx->ptr, p, size);
+		return 0;
+	}
+	char *ptr = luat_heap_realloc(ctx->ptr, ctx->len + size);
+	if (ptr == NULL)
+	{
+		LLOGE("内存分配失败");
+		return 1;
+	}
+	memcpy(ptr + ctx->len, p, size);
+	ctx->ptr = ptr;
+	ctx->len += size;
+	return 0;
+}
+
+static int pmain(lua_State *L)
+{
+	const char *name = luaL_checkstring(L, 1);
+	size_t len = 0;
+	const char *data = luaL_checklstring(L, 2, &len);
+	int ret = luaL_loadbufferx(L, data, len, name, NULL);
+	if (ret)
+	{
+		LLOGE("文件加载失败 %s %s", name, lua_tostring(L, -1));
+		return 0;
+	}
+	// LLOGD("luac转换成功,开始转buff");
+	luac_ctx_t *ctx = luat_heap_malloc(sizeof(luac_ctx_t));
+	memset(ctx, 0, sizeof(luac_ctx_t));
+	// LLOGD("getproto ");
+	const Proto *f = getproto(L->top - 1);
+	// LLOGD("Proto %p", f);
+	ret = luaU_dump(L, f, writer, ctx, 0);
+	// LLOGD("luaU_dump 执行完成");
+	if (ret == 0)
+	{
+		luadb_addfile(name, ctx->ptr, ctx->len);
+	}
+	lua_pushinteger(L, ret);
+	luat_heap_free(ctx->ptr);
+	luat_heap_free(ctx);
+	return 1;
+}
+
+static int to_luac(const char *name, char *data, size_t len)
+{
+	// LLOGD("检查语法并转换成luac %s", name);
+	lua_State *L = lua_newstate(luat_heap_alloc, NULL);
+	// LLOGD("创建临时luavm");
+	lua_pushcfunction(L, &pmain);
+	lua_pushstring(L, name);
+	lua_pushlstring(L, data, len);
+	// LLOGD("准备执行luac转换");
+	int ret = lua_pcall(L, 2, 1, 0);
+	if (ret)
+	{
+		LLOGD("lua文件加载失败 %s %d", name, ret);
+		lua_close(L);
+		return -1;
+	}
+	ret = luaL_checkinteger(L, -1);
+	lua_close(L);
+	return ret;
+}
+
+static int add_onefile(const char *path)
 {
 	size_t len = 0;
-	if (strlen(path) < 4 || strlen(path) >= 512)
+	int ret = 0;
+	// LLOGD("把%s当做main.lua运行", path);
+	char tmpname[512] = {0};
+	FILE *f = fopen(path, "rb");
+	if (!f)
 	{
-		return NULL;
+		LLOGE("文件不存在 %s", path);
+		return -1;
+	}
+	fseek(f, 0, SEEK_END);
+	len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	// void* fptr = luat_heap_malloc(len);
+	char *tmp = luat_heap_malloc(len);
+	if (tmp == NULL)
+	{
+		fclose(f);
+		LLOGE("文件太大,内存放不下 %s", path);
+		return -2;
+	}
+	fread(tmp, 1, len, f);
+	fclose(f);
+
+	for (size_t i = strlen(path); i > 0; i--)
+	{
+		if (path[i - 1] == '/' || path[i - 1] == '\\')
+		{
+			memcpy(tmpname, path + i, strlen(path) - 1);
+			break;
+		}
+	}
+	if (tmpname[0] == 0x00)
+	{
+		memcpy(tmpname, path, strlen(path));
 	}
 
 	if (!memcmp(path + strlen(path) - 4, ".lua", 4))
 	{
-		// LLOGD("把%s当做main.lua运行", path);
-		char tmpname[512] = {0};
-		FILE *f = fopen(path, "rb");
-		if (!f)
-		{
-			LLOGE("lua文件 %s", path);
-			return NULL;
-		}
-		fseek(f, 0, SEEK_END);
-		len = ftell(f);
-		fseek(f, 0, SEEK_SET);
-		// void* fptr = luat_heap_malloc(len);
-		char *tmp = luat_heap_malloc(len);
-		if (tmp == NULL)
-		{
-			fclose(f);
-			LLOGE("lua文件太大,内存放不下 %s", path);
-			return NULL;
-		}
-		fread(tmp, 1, len, f);
-		fclose(f);
-		for (size_t i = strlen(path); i > 0; i--)
-		{
-			if (path[i - 1] == '/' || path[i - 1] == '\\')
-			{
-				memcpy(tmpname, path + i, strlen(path) - 1);
-				break;
-			}
-		}
-		if (tmpname[0] == 0x00)
-		{
-			memcpy(tmpname, path, strlen(path));
-		}
 
-		// 开始合成luadb结构
-		luadb_addfile(tmpname, tmp, len);
-		luat_heap_free(tmp);
-		return luadb_ptr;
+		ret = to_luac(tmpname, tmp, len);
+	}
+	else
+	{
+		ret = luadb_addfile(tmpname, tmp, len);
+	}
+	luat_heap_free(tmp);
+	return ret;
+}
+
+void *check_file_path(const char *path)
+{
+	if (strlen(path) < 4 || strlen(path) >= 512)
+	{
+		LLOGD("文件长度不对劲 %d %s", strlen(path), path);
+		return NULL;
 	}
 	// 目录模式
 	if (!memcmp(path + strlen(path) - 1, "/", 1) || !memcmp(path + strlen(path) - 1, "\\", 1))
@@ -337,15 +435,14 @@ void *check_cmd_args(const char *path)
 		DIR *dp;
 		struct dirent *ep;
 		// int index = 0;
-		FILE *f = NULL;
 		char buff[512] = {0};
 
-// LLOGD("加载目录 %s", path);
-#ifdef LUA_USE_WINDOWS
+		// LLOGD("加载目录 %s", path);
+		#ifdef LUA_USE_WINDOWS
 		memcpy(buff, path, strlen(path));
-#else
+		#else
 		memcpy(buff, path, strlen(path) - 1);
-#endif;
+		#endif;
 		dp = opendir(buff);
 		// LLOGD("目录打开 %p", dp);
 		if (dp != NULL)
@@ -358,36 +455,15 @@ void *check_cmd_args(const char *path)
 				{
 					continue;
 				}
-#ifdef LUA_USE_WINDOWS
+				#ifdef LUA_USE_WINDOWS
 				sprintf(buff, "%s\\%s", path, ep->d_name);
-#else
+				#else
 				sprintf(buff, "%s/%s", path, ep->d_name);
-#endif
-				// index++;
-				f = fopen(buff, "rb");
-				if (f == NULL)
+				#endif
+				if (add_onefile(buff))
 				{
-					LLOGW("打开文件失败,跳过 %s", buff);
+					return NULL;
 				}
-				fseek(f, 0, SEEK_END);
-				len = ftell(f);
-				fseek(f, 0, SEEK_SET);
-				char *tmp = luat_heap_malloc(len);
-				if (tmp == NULL)
-				{
-					LLOGE("内存不足,无法加载文件 %s", buff);
-				}
-				else
-				{
-					fread(tmp, 1, len, f);
-				}
-				fclose(f);
-				if (tmp)
-				{
-					luadb_addfile(ep->d_name, tmp, len);
-					luat_heap_free(tmp);
-				}
-				// continue;
 			}
 			// LLOGD("遍历结束");
 			(void)closedir(dp);
@@ -399,6 +475,13 @@ void *check_cmd_args(const char *path)
 			return NULL;
 		}
 	}
-	// LLOGD("啥模式都不是, 没法加载 %s", path);
-	return NULL;
+	else
+	{
+		if (add_onefile(path))
+		{
+			return NULL;
+		}
+		return luadb_ptr;
+	}
+	// return NULL;
 }
