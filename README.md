@@ -1,8 +1,10 @@
 # 针对PC环境的LuatOS集成
 
-* 使用说明
+* [使用说明](doc/usage.md)
 * [编译说明](doc/compile.md)
 * [设计文档](doc/design.md)
+
+本BSP已经替代主库的`bsp/linux`和`bsp/win32`
 
 ## 待完成列表功能
 

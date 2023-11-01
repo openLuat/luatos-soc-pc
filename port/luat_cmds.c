@@ -154,6 +154,7 @@ int luat_cmd_parse(int argc, char **argv)
 	for (size_t i = 1; i < (size_t)argc; i++)
 	{
 		const char *arg = argv[i];
+		// 加载luadb文件镜像直接启动
 		if (is_opts("--load_luadb=", arg))
 		{
 			if (load_luadb(arg + strlen("--load_luadb=")))
@@ -163,6 +164,16 @@ int luat_cmd_parse(int argc, char **argv)
 			}
 			continue;
 		}
+		if (is_opts("--ldb=", arg))
+		{
+			if (load_luadb(arg + strlen("--ldb=")))
+			{
+				LLOGE("加载luadb镜像失败");
+				return -1;
+			}
+			continue;
+		}
+		// 加载LuaTools项目文件直接启动
 		if (is_opts("--load_luatools=", arg))
 		{
 			if (load_luatools(arg + strlen("--load_luatools=")))
@@ -172,6 +183,17 @@ int luat_cmd_parse(int argc, char **argv)
 			}
 			continue;
 		}
+		if (is_opts("--llt=", arg))
+		{
+			if (load_luatools(arg + strlen("--llt=")))
+			{
+				LLOGE("加载luatools项目文件失败");
+				return -1;
+			}
+			continue;
+		}
+
+
 		if (arg[0] == '-')
 		{
 			continue;
