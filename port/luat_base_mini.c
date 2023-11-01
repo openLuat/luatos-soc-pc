@@ -114,7 +114,7 @@ static const luaL_Reg loadedlibs[] = {
   {"http", luaopen_http},
   {"mqtt", luaopen_mqtt},
   {"websocket", luaopen_websocket},
-  {"ftp", luaopen_ftp},
+  // {"ftp", luaopen_ftp},
   {"errDump", luaopen_errdump},
 #endif
   {NULL, NULL}
