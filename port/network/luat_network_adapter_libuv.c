@@ -6,6 +6,7 @@
 #include "luat_malloc.h"
 #include "printf.h"
 #include "luat_msgbus.h"
+#include "luat_pcconf.h"
 
 #include "luat_network_adapter.h"
 
@@ -134,16 +135,17 @@ static inline int set_socket_state(int socket_id, int state) {
 
 typedef struct task_event_async
 {
-    uv_async_t async;
+    // uv_async_t async;
     OS_EVENT event;
     luat_network_cb_param_t param;
 }task_event_async_t;
 
 
 static void cb_nw_task_async(uv_async_t *async) {
-    task_event_async_t* e = (task_event_async_t*)async;
+    task_event_async_t* e = (task_event_async_t*)async->data;
     ctrl.socket_cb(&e->event, &e->param);
-    luat_heap_free(async);
+    luat_heap_free(e);
+    free_uv_handle(async);
 }
 
 static void cb_to_nw_task(uint32_t event_id, uint32_t param1, uint32_t param2, uint32_t param3)
@@ -154,10 +156,13 @@ static void cb_to_nw_task(uint32_t event_id, uint32_t param1, uint32_t param2, u
         LLOGE("out of memory when malloc cb_to_nw_task async ctx");
         return;
     }
-    ret = uv_async_init(main_loop, &e->async, cb_nw_task_async);
+    memset(e, 0, sizeof(task_event_async_t));
+    uv_async_t* async = luat_heap_malloc(sizeof(uv_async_t));;
+    ret = uv_async_init(main_loop, async, cb_nw_task_async);
     if (ret) {
         LLOGE("uv_async_init cb_to_nw_task %d", ret);
         luat_heap_free(e);
+        free_uv_handle(async);
         return;
     }
     OS_EVENT event = {.ID = event_id, .Param1 = param1, .Param2 = param2, .Param3 = param3};
@@ -170,7 +175,8 @@ static void cb_to_nw_task(uint32_t event_id, uint32_t param1, uint32_t param2, u
     }
     memcpy(&e->param, &param, sizeof(luat_network_cb_param_t));
     LLOGD("socket[%d] 发送nw_task消息 %08X %016X", param1 & 0xFF, e->event.ID, param.tag);
-    uv_async_send(&e->async);
+    async->data = e;
+    uv_async_send(async);
 }
 
 static int libuv_set_dns_server(uint8_t server_index, luat_ip_addr_t *ip, void *user_data);
@@ -427,7 +433,7 @@ static void udp_connect_async(uv_async_t *async)
     // ret = uv_udp_connect(&sockets[socket_id].udp, (const struct sockaddr *)&c->addr);
     // memcpy(&sockets[socket_id].remote, (const struct sockaddr *)&c->addr, sizeof(const struct sockaddr));
     on_connect(&sockets[socket_id].udp, ret);
-    luat_heap_free(async);
+    free_uv_handle(async);
 }
 
 // 作为client绑定一个port，并连接remote_ip和remote_port对应的server
@@ -540,7 +546,7 @@ static void on_shutdown(uv_shutdown_t *handle)
 static void udp_async_close(uv_async_t *handle)
 {
     int socket_id = (int)handle->data;
-    luat_heap_free(handle);
+    free_uv_handle(handle);
     on_close(&sockets[socket_id].udp);
 }
 
@@ -569,7 +575,7 @@ static int close_socket(int socket_id, const char *tag)
         uv_async_init(main_loop, async, udp_async_close);
         ret = uv_async_send(async);
         if (ret) {
-            luat_heap_free(async);
+            free_uv_handle(async);
             LLOGI("socket[%d] uv_async_send %d %s", socket_id, ret, uv_err_name(ret));
             set_socket_state(socket_id, CLOSED);
         }
@@ -697,6 +703,7 @@ static void on_sent(uv_write_t *req, int status)
     memcpy(&len, tmp, 4);
     int socket_id = (int32_t)req->data;
     LLOGD("socket[%d] tcp sent %d %d", socket_id, status, len);
+    luat_heap_free(req);
 
     if (status == 0)
     {
@@ -705,10 +712,9 @@ static void on_sent(uv_write_t *req, int status)
     }
     else
     {
-        // LLOGD("发送成功, 执行ERROR消息");
+        // LLOGD("发送失败, 执行ERROR消息");
         cb_to_nw_task(EV_NW_SOCKET_ERROR, socket_id, 0, sockets[socket_id].param);
     }
-    luat_heap_free(req);
 }
 
 static void on_sent_udp(uv_udp_send_t *req, int status)
@@ -761,7 +767,7 @@ static int libuv_socket_send(int socket_id, uint64_t tag, const uint8_t *buf, ui
     // LLOGD("待发送的内容 %.*s", len, buf);
     if (sockets[socket_id].is_tcp)
     {
-        req = luat_heap_malloc(sizeof(uv_write_t));
+        req = luat_heap_malloc(sizeof(uv_write_t) + 4);
         memset(req, 0, sizeof(uv_write_t));
         tmp = (char *)req;
         tmp += sizeof(uv_write_t);
@@ -1051,7 +1057,7 @@ static int l_ip_ready(lua_State *L, void *ptr)
 static void ip_ready_timer_cb(uv_timer_t *t)
 {
     rtos_msg_t msg = {0};
-    luat_heap_free(t);
+    free_uv_handle(t);
     msg.handler = l_ip_ready;
     msg.arg1 = 1;
     luat_msgbus_put(&msg, 0);

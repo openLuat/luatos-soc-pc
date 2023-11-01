@@ -16,14 +16,20 @@
 
 #include "uv.h"
 
+#ifdef LUAT_USE_LVGL
+uv_timer_t lvgl_timer;
+#include "lvgl.h"
+#endif
+
 #define LUAT_HEAP_SIZE (1024*1024)
 uint8_t luavm_heap[LUAT_HEAP_SIZE] = {0};
 
 int cmdline_argc;
 char** cmdline_argv;
-uv_timespec64_t boot_ts;
+// uv_timespec64_t boot_ts;
+extern uint64_t uv_startup_ns;
 
-int lua_main (int argc, char **argv);
+int lua_main (int argc, char** argv);
 
 void luat_log_init_win32(void);
 void luat_uart_initial_win32(void);
@@ -31,6 +37,10 @@ void luat_network_init(void);
 
 uv_loop_t *main_loop;
 uv_mutex_t timer_lock;
+
+int luat_cmd_parse(int argc, char** argv);
+static int luat_lvg_handler(lua_State* L, void* ptr);
+static void lvgl_timer_cb(uv_timer_t* lvgl_timer);
 
 void uv_luat_main(void* args) {
     (void)args;
@@ -52,10 +62,12 @@ static void timer_nop(uv_timer_t *handle) {
 int main(int argc, char** argv) {
     cmdline_argc = argc;
     cmdline_argv = argv;
+
     main_loop = malloc(sizeof(uv_loop_t));
     // uv_replace_allocator(luat_heap_malloc, luat_heap_realloc, luat_heap_calloc, luat_heap_free);
     uv_loop_init(main_loop);
-    uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
+    // uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
+    uv_startup_ns = uv_hrtime();
     uv_mutex_init(&timer_lock);
 
     luat_pcconf_init();
@@ -65,18 +77,45 @@ int main(int argc, char** argv) {
     luat_fs_init();
     luat_network_init();
 
+    
+    int ret = luat_cmd_parse(cmdline_argc, cmdline_argv);
+    if (ret) {
+        return ret;
+    }
+
+    #ifdef LUAT_USE_LVGL
+    lv_init();
+    uv_timer_init(main_loop, &lvgl_timer);
+    uv_timer_start(&lvgl_timer, lvgl_timer_cb, 25, 25);
+    #endif
+
     // uv_thread_t l_main;
     uv_timer_t t;
     uv_timer_init(main_loop, &t);
     uv_timer_start(&t, timer_nop, 1000, 1000);
-    uv_clock_gettime(UV_CLOCK_MONOTONIC, &boot_ts);
-    // uv_thread_create(&l_main, uv_luat_main, NULL);
 
-    // uv_thread_join(&l_main);
-    // uv_run(main_loop, UV_RUN_DEFAULT);
     uv_luat_main(NULL);
 
     uv_loop_close(main_loop);
     free(main_loop);
     return 0;
 }
+
+// UI相关
+
+#ifdef LUAT_USE_LVGL
+static int luat_lvg_handler(lua_State* L, void* ptr) {
+    (void)L;
+    (void)ptr;
+    lv_tick_inc(25);
+    lv_task_handler();
+    return 0;
+}
+static void lvgl_timer_cb(uv_timer_t* lvgl_timer) {
+    rtos_msg_t msg = {
+        .handler = luat_lvg_handler
+    };
+    luat_msgbus_put(&msg, 0);
+}
+#endif
+

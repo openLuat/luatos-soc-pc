@@ -3,6 +3,7 @@
 #include "luat_msgbus.h"
 #include "luat_malloc.h"
 #include "luat_timer.h"
+#include "luat_pcconf.h"
 
 #include "uv.h"
 
@@ -106,7 +107,7 @@ int luat_timer_start(luat_timer_t *timer)
     ret = uv_timer_init(main_loop, timer_req);
     if (ret) {
         LLOGE("uv_timer_init %d", ret);
-        luat_heap_free(timers[id]);
+        free_uv_handle(timers[id]);
         timers[id] = NULL;
         uv_mutex_unlock(&timer_lock);
         return -1;
@@ -136,7 +137,7 @@ int luat_timer_stop(luat_timer_t *timer)
             ret = uv_timer_stop(timer_req);
             if (ret)
                 LLOGI("uv_timer_stop %d", ret);
-            luat_heap_free(timer_req);
+            free_uv_handle(timer_req);
             timers[i] = NULL;
             uv_mutex_unlock(&timer_lock);
             return 0;

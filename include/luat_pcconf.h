@@ -26,4 +26,6 @@ void luat_pcconf_init(void);
 
 void luat_pcconf_save(void);
 
+void free_uv_handle(void* ptr);
+
 #endif

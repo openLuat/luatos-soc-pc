@@ -2,8 +2,10 @@
 #include "luat_msgbus.h"
 #include "luat_fs.h"
 #include "luat_timer.h"
+#include "luat_malloc.h"
 #include <stdlib.h>
 #include <stdlib.h>
+#include "luat_mock.h"
 
 #define LUAT_LOG_TAG "main"
 #include "luat_log.h"
@@ -117,6 +119,26 @@ static const luaL_Reg loadedlibs[] = {
   // {"ftp", luaopen_ftp},
   {"errDump", luaopen_errdump},
 #endif
+// UI类
+#ifdef LUAT_USE_DISP
+  {"disp",  luaopen_disp},              // OLED显示模块
+#endif
+#ifdef LUAT_USE_U8G2
+  {"u8g2", luaopen_u8g2},              // u8g2
+#endif
+
+#ifdef LUAT_USE_EINK
+  {"eink",  luaopen_eink},              // 电子墨水屏
+#endif
+#ifdef LUAT_USE_FATFS
+  {"fatfs",  luaopen_fatfs},              // SD卡/tf卡
+#endif
+#ifdef LUAT_USE_LVGL
+  {"lvgl",   luaopen_lvgl},
+#endif
+#ifdef LUAT_USE_LCD
+  {"lcd",    luaopen_lcd},
+#endif
   {NULL, NULL}
 };
 
@@ -140,8 +162,19 @@ void luat_os_reboot(int code) {
     exit(code);
 }
 
+char bsp_name[64];
+
 const char* luat_os_bsp(void) {
-    return "mini";
+    int ret = 0;
+    luat_mock_ctx_t ctx = {0};
+    memcpy(ctx.key, "rtos.bsp.get", strlen("rtos.bsp.get"));
+    ret = luat_mock_call(&ctx);
+    if (ret == 0 && ctx.resp_len > 0 && ctx.resp_len < 64) {
+      memcpy(bsp_name, ctx.resp_data, ctx.resp_len);
+      bsp_name[ctx.resp_len] = 0x00;
+      return bsp_name;
+    }
+    return "pc";
 }
 
 
@@ -155,4 +188,19 @@ void luat_ota_reboot(int timeout_ms) {
   if (timeout_ms > 0)
     luat_timer_mdelay(timeout_ms);
   exit(0);
+}
+
+///------------------------------------
+
+#include "uv.h"
+
+static void on_free(uv_handle_t* ptr) {
+  luat_heap_free(ptr);
+}
+
+
+void free_uv_handle(void* ptr) {
+  if (ptr == NULL)
+    return;
+  uv_close((uv_handle_t*)ptr, on_free);
 }

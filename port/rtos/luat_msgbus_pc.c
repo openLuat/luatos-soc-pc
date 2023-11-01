@@ -45,7 +45,7 @@ uint32_t luat_msgbus_get(rtos_msg_t *msg, size_t timeout)
     int ret2 = 0;
     while (1)
     {
-        ret2 = uv_run(main_loop, UV_RUN_NOWAIT);
+        
         uv_mutex_lock(&m);
         ret = luat_queue_pop(&head, item);
         uv_mutex_unlock(&m);
@@ -55,10 +55,7 @@ uint32_t luat_msgbus_get(rtos_msg_t *msg, size_t timeout)
             luat_heap_free(item);
             return 0;
         }
-        if (ret2 == 0)
-            uv_sleep(2);
-        else
-            uv_sleep(1);
+        ret2 = uv_run(main_loop, UV_RUN_ONCE);
     }
     return 1;
 }

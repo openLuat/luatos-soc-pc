@@ -4,5 +4,6 @@
 
 xmake clean -a
 export VM_64bit=0
-xmake f -p linux  -a i386 -m debug -y
+export LUAT_USE_GUI=n
+xmake f -p linux  -a i386 -m debug
 xmake -w -y
