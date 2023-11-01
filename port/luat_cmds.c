@@ -349,7 +349,7 @@ static int pmain(lua_State *L)
 	return 1;
 }
 
-static int to_luac(const char *name, char *data, size_t len)
+static int to_luac(const char *fullpath, const char *name, char *data, size_t len)
 {
 	// LLOGD("检查语法并转换成luac %s", name);
 	lua_State *L = lua_newstate(luat_heap_alloc, NULL);
@@ -361,7 +361,7 @@ static int to_luac(const char *name, char *data, size_t len)
 	int ret = lua_pcall(L, 2, 1, 0);
 	if (ret)
 	{
-		LLOGD("lua文件加载失败 %s %d", name, ret);
+		LLOGD("lua文件加载失败 %s %d", fullpath, ret);
 		lua_close(L);
 		return -1;
 	}
@@ -412,7 +412,7 @@ static int add_onefile(const char *path)
 	if (!memcmp(path + strlen(path) - 4, ".lua", 4))
 	{
 
-		ret = to_luac(tmpname, tmp, len);
+		ret = to_luac(path, tmpname, tmp, len);
 	}
 	else
 	{
