@@ -162,7 +162,7 @@ void luat_os_reboot(int code) {
 }
 
 const char* luat_os_bsp(void) {
-    return "mini";
+    return "pc"; // TODO 变成动态字符串
 }
 
 
