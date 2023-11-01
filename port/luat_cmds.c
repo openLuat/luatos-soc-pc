@@ -3,6 +3,7 @@
 #include "luat_fs.h"
 #include "luat_malloc.h"
 #include "lundump.h"
+#include "luat_mock.h"
 
 #define LUAT_LOG_TAG "fs"
 #include "luat_log.h"
@@ -193,6 +194,16 @@ int luat_cmd_parse(int argc, char **argv)
 			continue;
 		}
 
+		// mock加载
+		if (is_opts("--mlua=", arg))
+		{
+			if (luat_mock_init(arg + strlen("--mlua=")))
+			{
+				LLOGE("加载mock功能失败");
+				return -1;
+			}
+			continue;
+		}
 
 		if (arg[0] == '-')
 		{

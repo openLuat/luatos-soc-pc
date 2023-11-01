@@ -5,6 +5,7 @@
 #include "luat_malloc.h"
 #include <stdlib.h>
 #include <stdlib.h>
+#include "luat_mock.h"
 
 #define LUAT_LOG_TAG "main"
 #include "luat_log.h"
@@ -161,8 +162,19 @@ void luat_os_reboot(int code) {
     exit(code);
 }
 
+char bsp_name[64];
+
 const char* luat_os_bsp(void) {
-    return "pc"; // TODO 变成动态字符串
+    int ret = 0;
+    luat_mock_ctx_t ctx = {0};
+    memcpy(ctx.key, "rtos.bsp.get", strlen("rtos.bsp.get"));
+    ret = luat_mock_call(&ctx);
+    if (ret == 0 && ctx.resp_len > 0 && ctx.resp_len < 64) {
+      memcpy(bsp_name, ctx.resp_data, ctx.resp_len);
+      bsp_name[ctx.resp_len] = 0x00;
+      return bsp_name;
+    }
+    return "pc";
 }
 
 
