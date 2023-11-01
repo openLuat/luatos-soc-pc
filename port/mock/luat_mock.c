@@ -119,9 +119,13 @@ int luat_mock_call(luat_mock_ctx_t* ctx) {
     if (mock_file_path[0] == 0x00) {
         return -2;
     }
+    
+    const char *resp;
+    lua_Integer intVal;
+    lua_Number numVal;
     lua_pushcfunction(mock_L, &mock_main);
-	lua_pushstring(mock_L, ctx->key);
-	lua_pushlstring(mock_L, ctx->req_data, ctx->req_len);
+	  lua_pushstring(mock_L, ctx->key);
+	  lua_pushlstring(mock_L, ctx->req_data, ctx->req_len);
     int ret = lua_pcall(mock_L, 2, 2, 0);
     if (ret) {
         LLOGE("pcall %d %s", ret, lua_tostring(mock_L, -1));
@@ -144,16 +148,16 @@ int luat_mock_call(luat_mock_ctx_t* ctx) {
             ctx->resp_data = luat_heap_malloc(sizeof(lua_Integer));
             ctx->resp_len = sizeof(lua_Integer);
             if (lua_isinteger(mock_L, 2)) {
-                lua_Integer intVal = lua_tointeger(mock_L, 2);
+                intVal = lua_tointeger(mock_L, 2);
                 memcpy(ctx->resp_data, &intVal, sizeof(lua_Integer));
             }
             else {
-                lua_Number numVal = lua_tonumber(mock_L, 2);
+                numVal = lua_tonumber(mock_L, 2);
                 memcpy(ctx->resp_data, &numVal, sizeof(lua_Integer));
             }
             break;
         case LUA_TSTRING:
-            const char* resp = lua_tolstring(mock_L, 2, &ctx->resp_len);
+            resp = lua_tolstring(mock_L, 2, &ctx->resp_len);
             if (ctx->resp_len > 0) {
                 ctx->resp_data = luat_heap_malloc(ctx->resp_len + 1);
                 memcpy(ctx->resp_data, resp, ctx->resp_len + 1);
