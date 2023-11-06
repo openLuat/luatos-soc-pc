@@ -86,6 +86,9 @@ target("luatos-lua")
             ,luatos.."luat/modules/luat_lib_libcoap.c"
             ,luatos.."luat/modules/luat_lib_rtc.c"
             ,luatos.."luat/modules/luat_lib_gpio.c"
+            ,luatos.."luat/modules/luat_lib_spi.c"
+            ,luatos.."luat/modules/luat_lib_i2c.c"
+            ,luatos.."luat/modules/luat_irq.c"
             ,luatos.."luat/modules/luat_main.c"
             )
 
