@@ -119,7 +119,13 @@ static const luaL_Reg loadedlibs[] = {
   // {"ftp", luaopen_ftp},
   {"errDump", luaopen_errdump},
 #endif
+#ifdef LUAT_USE_ERCOAP
+  {"ercoap", luaopen_ercoap},
+#endif
 // UI类
+#ifdef LUAT_USE_FONTS
+  {"fonts", luaopen_fonts},
+#endif
 #ifdef LUAT_USE_DISP
   {"disp",  luaopen_disp},              // OLED显示模块
 #endif

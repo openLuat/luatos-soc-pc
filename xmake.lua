@@ -194,9 +194,15 @@ target("luatos-lua")
     -- errdump
     add_includedirs(luatos.."components/network/errdump",{public = true})
     add_files(luatos.."components/network/errdump/*.c")
+
+    
+    add_includedirs(luatos.."components/network/ercoap/include",{public = true})
+    add_files(luatos.."components/network/ercoap/src/*.c")
+    add_files(luatos.."components/network/ercoap/binding/*.c")
     
     if os.getenv("LUAT_USE_GUI") == "y" then
         add_files("ui/*.c")
+        add_defines("U8G2_USE_LARGE_FONTS=1")
 
         -- sdl2
         add_includedirs(luatos.."components/ui/sdl2")
@@ -223,6 +229,9 @@ target("luatos-lua")
         add_includedirs(luatos.."components/qrcode")
         add_includedirs(luatos.."components/tjpgd")
         add_files(luatos.."components/tjpgd/*.c")
-        add_files(luatos.."components/qrcode/*.c")  
+        add_files(luatos.."components/qrcode/*.c")
+
+        add_includedirs(luatos.."components/luatfonts")
+        add_files(luatos.."components/luatfonts/**.c")
     end
 target_end()
