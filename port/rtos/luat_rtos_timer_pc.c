@@ -131,3 +131,10 @@ int luat_rtos_timer_stop(luat_rtos_timer_t timer_handle)
 	return 0;
 }
 
+
+
+void luat_rtos_task_sleep(uint32_t ms) {
+    if (ms > 0) {
+        uv_sleep(ms);
+    }
+}
