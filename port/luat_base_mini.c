@@ -4,7 +4,6 @@
 #include "luat_timer.h"
 #include "luat_malloc.h"
 #include <stdlib.h>
-#include <stdlib.h>
 #include "luat_mock.h"
 
 #define LUAT_LOG_TAG "main"
@@ -172,6 +171,7 @@ char bsp_name[64];
 
 const char* luat_os_bsp(void) {
     int ret = 0;
+    #ifdef LUAT_USE_MOCKAPI
     luat_mock_ctx_t ctx = {0};
     memcpy(ctx.key, "rtos.bsp.get", strlen("rtos.bsp.get"));
     ret = luat_mock_call(&ctx);
@@ -180,6 +180,7 @@ const char* luat_os_bsp(void) {
       bsp_name[ctx.resp_len] = 0x00;
       return bsp_name;
     }
+    #endif
     return "pc";
 }
 

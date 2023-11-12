@@ -27,6 +27,7 @@
 #define LUAT_USE_NETWORK 1
 #define LUAT_USE_SNTP 1
 #define LUAT_USE_TLS  1
+#define LUAT_USE_MOCKAPI 1
 
 #define LV_HOR_RES_MAX          (2000)
 #define LV_VER_RES_MAX          (2000)
@@ -49,7 +50,7 @@
 #define LUAT_USE_SPI  1
 // #define LUAT_USE_ADC  1
 // #define LUAT_USE_PWM  1
-// #define LUAT_USE_WDT  1
+#define LUAT_USE_WDT  1
 // #define LUAT_USE_PM  1
 #define LUAT_USE_MCU  1
 #define LUAT_USE_RTC 1
