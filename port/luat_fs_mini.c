@@ -20,6 +20,8 @@ extern char *luadb_ptr;
 
 void *build_luadb_from_cmd(void);
 
+static void lvgl_fs_init(void);
+
 int luat_fs_init(void)
 {
 	// vfs进行必要的初始化
@@ -58,5 +60,26 @@ int luat_fs_init(void)
 		};
 		luat_fs_mount(&conf2);
 	}
+
+#ifdef LUAT_USE_LVGL
+	lvgl_fs_init();
+#endif
 	return 0;
 }
+
+
+#ifdef LUAT_USE_LVGL
+#include "luat_lvgl.h"
+static void lvgl_fs_init(void) {
+	luat_lv_fs_init();
+    #ifdef LUAT_USE_LVGL_BMP
+	lv_bmp_init();
+    #endif
+    #ifdef LUAT_USE_LVGL_PNG
+	lv_png_init();
+    #endif
+    #ifdef LUAT_USE_LVGL_JPG
+	lv_split_jpeg_init();
+    #endif
+}
+#endif

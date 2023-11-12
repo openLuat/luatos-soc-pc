@@ -74,6 +74,10 @@ int main(int argc, char** argv) {
 
     luat_log_init_win32();
     bpool(luavm_heap, LUAT_HEAP_SIZE);
+    
+    #ifdef LUAT_USE_LVGL
+    lv_init();
+    #endif
     luat_fs_init();
     luat_network_init();
 
@@ -84,7 +88,6 @@ int main(int argc, char** argv) {
     }
 
     #ifdef LUAT_USE_LVGL
-    lv_init();
     uv_timer_init(main_loop, &lvgl_timer);
     uv_timer_start(&lvgl_timer, lvgl_timer_cb, 25, 25);
     #endif
