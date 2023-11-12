@@ -19,8 +19,12 @@ set_optimize("fastest")
 -- set language: c11
 set_languages("gnu11")
 
+-- 核心宏定义
 add_defines("__LUATOS__", "__XMAKE_BUILD__")
+-- mbedtls使用本地自定义配置
 add_defines("MBEDTLS_CONFIG_FILE=\"mbedtls_config_mini.h\"")
+-- coremark配置迭代数量
+add_defines("ITERATIONS=300000")
 
 if os.getenv("VM_64bit") == "1" then
     add_defines("LUAT_CONF_VM_64bit")
@@ -160,6 +164,10 @@ target("luatos-lua")
     -- c_common
     add_includedirs(luatos.."components/common",{public = true})
     add_files(luatos.."components/common/*.c")
+
+    -- coremark
+    add_includedirs(luatos.."components/coremark",{public = true})
+    add_files(luatos.."components/coremark/*.c")
 
     ----------------------------------------------------------------------
     -- 网络相关

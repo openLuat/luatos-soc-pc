@@ -73,7 +73,7 @@
 // #define LUAT_USE_SFUD  1
 // #define LUAT_USE_STATEM 1
 // 性能测试
-// #define LUAT_USE_COREMARK 1
+#define LUAT_USE_COREMARK 1
 // #define LUAT_USE_IR 1
 // FDB 提供kv数据库, 与nvm库类似
 // #define LUAT_USE_FDB 1

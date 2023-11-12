@@ -110,6 +110,9 @@ static const luaL_Reg loadedlibs[] = {
 #ifdef LUAT_USE_FASTLZ
   {"fastlz", luaopen_fastlz},
 #endif
+#ifdef LUAT_USE_COREMARK
+  {"coremark", luaopen_coremark},
+#endif
 #ifdef LUAT_USE_NETWORK
   {"socket", luaopen_socket_adapter},
   {"http", luaopen_http},
