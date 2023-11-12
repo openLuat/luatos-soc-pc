@@ -90,6 +90,7 @@ target("luatos-lua")
             ,luatos.."luat/modules/luat_lib_i2c.c"
             ,luatos.."luat/modules/luat_lib_wdt.c"
             ,luatos.."luat/modules/luat_lib_pm.c"
+            ,luatos.."luat/modules/luat_lib_adc.c"
             ,luatos.."luat/modules/luat_irq.c"
             ,luatos.."luat/modules/luat_main.c"
             )
