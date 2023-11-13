@@ -147,6 +147,9 @@ static const luaL_Reg loadedlibs[] = {
 #ifdef LUAT_USE_LCD
   {"lcd",    luaopen_lcd},
 #endif
+#ifdef LUAT_USE_SQLITE3
+  {"sqlite3",    luaopen_sqlite3},
+#endif
   {NULL, NULL}
 };
 

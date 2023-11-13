@@ -169,6 +169,11 @@ target("luatos-lua")
     add_includedirs(luatos.."components/coremark",{public = true})
     add_files(luatos.."components/coremark/*.c")
 
+    -- sqlite3
+    add_includedirs(luatos.."components/sqlite3/include",{public = true})
+    add_files(luatos.."components/sqlite3/src/*.c")
+    add_files(luatos.."components/sqlite3/binding/*.c")
+
     ----------------------------------------------------------------------
     -- 网络相关
 
@@ -207,7 +212,7 @@ target("luatos-lua")
     add_includedirs(luatos.."components/network/errdump",{public = true})
     add_files(luatos.."components/network/errdump/*.c")
 
-    
+    -- ercoap
     add_includedirs(luatos.."components/network/ercoap/include",{public = true})
     add_files(luatos.."components/network/ercoap/src/*.c")
     add_files(luatos.."components/network/ercoap/binding/*.c")
