@@ -216,6 +216,16 @@ target("luatos-lua")
     add_includedirs(luatos.."components/network/ercoap/include",{public = true})
     add_files(luatos.."components/network/ercoap/src/*.c")
     add_files(luatos.."components/network/ercoap/binding/*.c")
+
+    -- ws2812
+    add_includedirs(luatos.."components/ws2812/include",{public = true})
+    add_files(luatos.."components/ws2812/src/*.c")
+    add_files(luatos.."components/ws2812/binding/*.c")
+
+    -- onewire
+    add_includedirs(luatos.."components/onewire/include",{public = true})
+    add_files(luatos.."components/onewire/src/*.c")
+    add_files(luatos.."components/onewire/binding/*.c")
     
     if os.getenv("LUAT_USE_GUI") == "y" then
         add_files("ui/*.c")

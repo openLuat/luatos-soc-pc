@@ -106,6 +106,8 @@
 #define LUAT_USE_BIT64 1
 #define LUAT_USE_FASTLZ 1
 #define LUAT_USE_SQLITE3 1
+#define LUAT_USE_ONEWIRE 1
+#define LUAT_USE_WS2812 1
 
 //--------------------------------------------------
 // GUI相关

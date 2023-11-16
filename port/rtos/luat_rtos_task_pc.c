@@ -129,3 +129,10 @@ int luat_rtos_event_recv(luat_rtos_task_handle task_handle, uint32_t wait_event_
     return -1;
 }
 
+void luat_os_entry_cri(void) {
+
+}
+
+void luat_os_exit_cri(void) {
+    
+}
