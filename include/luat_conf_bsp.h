@@ -108,6 +108,7 @@
 #define LUAT_USE_SQLITE3 1
 #define LUAT_USE_ONEWIRE 1
 #define LUAT_USE_WS2812 1
+#define LUAT_USE_XXTEA 1
 
 //--------------------------------------------------
 // GUI相关

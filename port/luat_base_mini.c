@@ -156,6 +156,9 @@ static const luaL_Reg loadedlibs[] = {
 #ifdef LUAT_USE_ONEWIRE
   {"onewire", luaopen_onewire},
 #endif
+#ifdef LUAT_USE_XXTEA
+  {"xxtea", luaopen_xxtea},
+#endif
   {NULL, NULL}
 };
 

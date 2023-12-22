@@ -227,6 +227,12 @@ target("luatos-lua")
     add_includedirs(luatos.."components/onewire/include",{public = true})
     add_files(luatos.."components/onewire/src/*.c")
     add_files(luatos.."components/onewire/binding/*.c")
+
+    
+    -- xxtea
+    add_includedirs(luatos.."components/xxtea/include",{public = true})
+    add_files(luatos.."components/xxtea/src/*.c")
+    add_files(luatos.."components/xxtea/binding/*.c")
     
     if os.getenv("LUAT_USE_GUI") == "y" then
         add_files("ui/*.c")
