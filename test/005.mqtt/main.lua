@@ -24,12 +24,12 @@ end
 -- pm.request(pm.LIGHT)
 
 --根据自己的服务器修改以下参数
-local mqtt_host = "lbsmqtt.airm2m.com"
-local mqtt_port = 1884
+local mqtt_host = "124.223.67.31"
+local mqtt_port = 1883
 local mqtt_isssl = false
-local client_id = "abc"
-local user_name = "user"
-local password = "password"
+local client_id = "124"
+local user_name = "1"
+local password = "124"
 
 local pub_topic = "/luatos/pub/" .. "pc"
 local sub_topic = "/luatos/sub/" .. "pc"

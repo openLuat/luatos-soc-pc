@@ -10,11 +10,11 @@ require "sysplus"
 udp_host = "183.230.102.122"
 udp_port = 5683
 -- 设备信息
-produt_id = "SJaLt5cVL2"
+product_id = "SJaLt5cVL2"
 device_name = "luatospc"
 device_key = "dUZVVWRIcjVsV2pSbTJsckd0TmgyRXNnMTJWMXhIMkk="
 
-_, _, main_token = iotauth.onenet(produt_id,device_name,device_key,"sha1")
+_, _, main_token = iotauth.onenet(product_id,device_name,device_key,"sha1")
 
 -- UDP事件处理函数
 local rxbuff = zbuff.create(1500)
@@ -46,8 +46,9 @@ function udpcb(sc, event)
     elseif event == socket.ON_LINE then
         log.info("udp", "UDP已准备就绪,可以上行")
         -- 上行登陆包
-        local data = ercoap.onenet("login", produt_id, device_name, main_token)
-        -- log.info("上行登陆包", data:toHex())
+        log.info("登陆参数", product_id, device_name, main_token)
+        local data = ercoap.onenet("login", product_id, device_name, main_token)
+        log.info("上行登陆包", data:toHex())
         socket.tx(sc, data)
     else
         log.info("udp", "其他事件", event)
@@ -72,8 +73,8 @@ sys.taskInit(function()
                break
             end
             -- 上行心跳包
-            -- onenet_coap_auth(string.format("$sys/%s/%s/keep_alive", produt_id, device_name))
-            local data = ercoap.onenet("keep_alive", produt_id, device_name, main_token)
+            -- onenet_coap_auth(string.format("$sys/%s/%s/keep_alive", product_id, device_name))
+            local data = ercoap.onenet("keep_alive", product_id, device_name, main_token)
             -- log.info("上行心跳包", data:toHex())
             socket.tx(netc, data)
 
@@ -94,7 +95,8 @@ sys.taskInit(function()
             log.info("uplink", jdata)
             -- jdata = [[{"id":"3","version":"1.0","params":{"WaterMeterState":{"value":0}}}]]
             -- log.info("uplink2", jdata)
-            local data = ercoap.onenet("thing/property/post", produt_id, device_name, post_token, jdata)
+            log.info("uplink", "thing/property/post", product_id, device_name, post_token:toHex(), jdata)
+            local data = ercoap.onenet("thing/property/post", product_id, device_name, post_token, jdata)
             -- log.info("onenet", "上行物模型数据", data:toHex())
             socket.tx(netc, data)
         end

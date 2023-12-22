@@ -1,6 +1,8 @@
 _G.sys = require("sys")
 require "sysplus"
 
+log.info("socket.ip", socket.localIP())
+
 sys.taskInit(function()
     sys.wait(100)
     while 1 do
@@ -23,7 +25,7 @@ sys.taskInit(function()
         log.info("netc", netc)
         socket.config(netc)
         socket.debug(netc, true)
-        socket.connect(netc, "112.125.89.8", 46631)
+        socket.connect(netc, "112.125.89.8", 41506)
 
         while running do
             sys.wait(100)
