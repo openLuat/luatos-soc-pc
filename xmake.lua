@@ -103,7 +103,7 @@ target("luatos-lua")
     add_files(luatos.."luat/vfs/*.c")
     -- remove_files(luatos .. "luat/vfs/luat_fs_lfs2.c")
     -- remove_files(luatos .. "luat/vfs/luat_fs_luadb.c")
-    remove_files(luatos .. "luat/vfs/luat_fs_fatfs.c")
+    -- remove_files(luatos .. "luat/vfs/luat_fs_fatfs.c")
     remove_files(luatos .. "luat/vfs/luat_fs_onefile.c")
     -- lfs
     add_includedirs(luatos.."components/lfs")
@@ -233,6 +233,10 @@ target("luatos-lua")
     add_includedirs(luatos.."components/xxtea/include",{public = true})
     add_files(luatos.."components/xxtea/src/*.c")
     add_files(luatos.."components/xxtea/binding/*.c")
+
+    -- fatfs
+    add_includedirs(luatos.."components/fatfs")
+    add_files(luatos.."components/fatfs/**.c")
     
     if os.getenv("LUAT_USE_GUI") == "y" then
         add_files("ui/*.c")
@@ -267,5 +271,6 @@ target("luatos-lua")
 
         add_includedirs(luatos.."components/luatfonts")
         add_files(luatos.."components/luatfonts/**.c")
+
     end
 target_end()

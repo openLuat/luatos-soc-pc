@@ -89,8 +89,8 @@
 #define LUAT_USE_YMODEM 1
 #define LUAT_USE_ERCOAP 1
 
-// #define LUAT_USE_FATFS
-// #define LUAT_USE_FATFS_CHINESE 3
+#define LUAT_USE_FATFS
+#define LUAT_USE_FATFS_CHINESE 3
 
 //----------------------------
 // 高级功能, 推荐使用repl, shell已废弃
