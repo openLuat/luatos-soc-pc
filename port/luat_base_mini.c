@@ -196,7 +196,7 @@ const char* luat_os_bsp(void) {
       return bsp_name;
     }
     #endif
-    return "pc";
+    return "PC";
 }
 
 
