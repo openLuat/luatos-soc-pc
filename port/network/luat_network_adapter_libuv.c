@@ -1084,3 +1084,7 @@ void luat_network_init(void)
     uv_timer_init(main_loop, t);
     uv_timer_start(t, ip_ready_timer_cb, 500, 0);
 }
+
+int net_lwip_check_all_ack(int socket_id) {
+    return 0;
+}
