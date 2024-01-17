@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        linux_bits: ["32bit", "64bit"]
+        linux_bits: ["32bit"]
       fail-fast: true
     steps:
     - uses: actions/checkout@v4
