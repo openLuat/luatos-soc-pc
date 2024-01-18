@@ -37,13 +37,15 @@ if os.getenv("LUAT_USE_GUI") == "y" then
 end
 
 if is_host("windows") then
-    -- add_defines("LUA_USE_WINDOWS")
+    add_defines("LUAT_USE_WINDOWS")
     add_defines("_CRT_SECURE_NO_WARNINGS")
     add_cflags("/utf-8")
     add_includedirs("win32/include")
     -- add_ldflags("-static")
 elseif is_host("linux") then
     add_defines("LUA_USE_LINUX")
+    add_cflags("-ffunction-sections -fdata-sections")
+    add_ldflags("-Wl,--gc-sections")
 elseif is_host("macos") then
     add_defines("LUA_USE_MACOSX")
 end
@@ -237,7 +239,15 @@ target("luatos-lua")
     -- fatfs
     add_includedirs(luatos.."components/fatfs")
     add_files(luatos.."components/fatfs/**.c")
-    
+
+    if is_host("windows") then
+        print("===================================")
+        -- lwip & zlink
+        add_includedirs("lwip/include")
+        add_files("lwip/api/**.c")
+        add_files("lwip/core/**.c")
+        add_files("lwip/netif/**.c")
+    end
     if os.getenv("LUAT_USE_GUI") == "y" then
         add_files("ui/*.c")
         add_defines("U8G2_USE_LARGE_FONTS=1")
