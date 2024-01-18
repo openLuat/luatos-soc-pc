@@ -16,6 +16,9 @@ luat_pcconf_t g_pcconf;
 extern uv_loop_t *main_loop;
 extern const luat_uart_drv_opts_t* uart_drvs[];
 extern const luat_uart_drv_opts_t uart_udp;
+extern const luat_uart_drv_opts_t uart_win32;
+
+int luat_uart_initial_win32();
 
 void luat_pcconf_init(void) {
     #ifdef LUAT_USE_LVGL
@@ -25,9 +28,19 @@ void luat_pcconf_init(void) {
     memcpy(g_pcconf.mcu_unique_id, "LuatOS@PC", strlen("LuatOS@PC"));
     g_pcconf.mcu_unique_id_len = strlen("LuatOS@PC");
     
-    uart_drvs[0] = &uart_udp;
-    uart_drvs[1] = &uart_udp;
-    uart_drvs[2] = &uart_udp;
+    #ifdef LUA_USE_WINDOWS
+    if (luat_uart_initial_win32() == 0) {
+        for (size_t i = 0; i < 128; i++)
+        {
+            uart_drvs[i] = &uart_win32;
+        }
+        return;
+    }
+    #endif
+    for (size_t i = 0; i < 16; i++)
+    {
+        uart_drvs[i] = &uart_udp;
+    }
 }
 
 void luat_pcconf_save(void) {

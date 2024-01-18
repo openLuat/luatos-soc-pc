@@ -9,7 +9,7 @@
 #define LUAT_LOG_TAG "uart"
 #include "luat_log.h"
 
-const luat_uart_drv_opts_t* uart_drvs[16];
+const luat_uart_drv_opts_t* uart_drvs[128];
 
 int luat_uart_setup(luat_uart_t* uart) {
     if (!luat_uart_exist(uart->id))
