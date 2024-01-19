@@ -110,7 +110,7 @@ pub extern fn luat_uart_open_extern(port: i32, baud_rate: i32, data_bits: i32, s
     //接收线程
     thread::spawn(move || {
         loop {
-            let mut serial_buf: Vec<u8> = vec![0; 1024];
+            let mut serial_buf: Vec<u8> = vec![0; 64*1024];
             let len = match uart.read(serial_buf.as_mut_slice()) {
                 Err(e) => {
                     if e.kind() == std::io::ErrorKind::TimedOut {//接收超时不算错误

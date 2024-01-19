@@ -29,13 +29,13 @@ void luat_pcconf_init(void) {
     g_pcconf.mcu_unique_id_len = strlen("LuatOS@PC");
     
     #ifdef LUA_USE_WINDOWS
-    LLOGD("执行uart_win32初始化");
+    // LLOGD("执行uart_win32初始化");
     if (luat_uart_initial_win32() == 0) {
         for (size_t i = 0; i < 128; i++)
         {
             uart_drvs[i] = &uart_win32;
         }
-        LLOGD("执行uart_win32初始化成功, 驱动已注册 %p", uart_drvs[1]);
+        // LLOGD("执行uart_win32初始化成功, 驱动已注册 %p", uart_drvs[1]);
         return;
     }
     #endif
