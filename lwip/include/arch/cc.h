@@ -39,43 +39,79 @@
 #define LWIP_SOCKET_EXTERNAL_HEADERS 1
 #define LWIP_SOCKET_EXTERNAL_HEADER_INET_H "inaddr.h"
 
- /* 选择小端模式 */
- #define BYTE_ORDER LITTLE_ENDIAN
+#ifdef _MSC_VER
+#pragma warning (disable: 4127) /* conditional expression is constant */
+#pragma warning (disable: 4996) /* 'strncpy' was declared deprecated */
+#pragma warning (disable: 4103) /* structure packing changed by including file */
+#pragma warning (disable: 4820) /* 'x' bytes padding added after data member 'y' */
+#pragma warning (disable: 4711) /* The compiler performed inlining on the given function, although it was not marked for inlining */
+#endif
 
-//  /* define compiler specific symbols */
-//  #if defined (__ICCARM__)
+#ifdef _MSC_VER
+#if _MSC_VER >= 1910
+#include <errno.h> /* use MSVC errno for >= 2017 */
+#else
+#define LWIP_PROVIDE_ERRNO /* provide errno for MSVC pre-2017 */
+#endif
+#else /* _MSC_VER */
+#define LWIP_PROVIDE_ERRNO /* provide errno for non-MSVC */
+#endif /* _MSC_VER */
 
- #define PACK_STRUCT_BEGIN
- #define PACK_STRUCT_STRUCT
- #define PACK_STRUCT_END
- #define PACK_STRUCT_FIELD(x) x
- #define PACK_STRUCT_USE_INCLUDES
+/* Define platform endianness (might already be defined) */
+#ifndef BYTE_ORDER
+#define BYTE_ORDER LITTLE_ENDIAN
+#endif /* BYTE_ORDER */
 
-//  #elif defined (__CC_ARM)
+typedef int sys_prot_t;
 
-//  #define PACK_STRUCT_BEGIN __packed
-//  #define PACK_STRUCT_STRUCT
-//  #define PACK_STRUCT_END
-//  #define PACK_STRUCT_FIELD(x) x
+#ifdef _MSC_VER
+/* define _INTPTR for Win32 MSVC stdint.h */
+#define _INTPTR 2
 
-//  #elif defined (__GNUC__)
+/* Do not use lwIP default definitions for format strings
+ * because these do not work with MSVC 2010 compiler (no inttypes.h)
+ */
+#define LWIP_NO_INTTYPES_H 1
 
-//  #define PACK_STRUCT_BEGIN
-//  #define PACK_STRUCT_STRUCT __attribute__ ((__packed__))
-//  #define PACK_STRUCT_END
-//  #define PACK_STRUCT_FIELD(x) x
+/* Define (sn)printf formatters for these lwIP types */
+#define X8_F  "02x"
+#define U16_F "hu"
+#define U32_F "lu"
+#define S32_F "ld"
+#define X32_F "lx"
 
-//  #elif defined (__TASKING__)
+#define S16_F "hd"
+#define X16_F "hx"
+#define SZT_F "lu"
+#endif /* _MSC_VER */
 
-//  #define PACK_STRUCT_BEGIN
-//  #define PACK_STRUCT_STRUCT
-//  #define PACK_STRUCT_END
-//  #define PACK_STRUCT_FIELD(x) x
+/* Compiler hints for packing structures */
+#define PACK_STRUCT_USE_INCLUDES
 
-//  #endif
+#define LWIP_ERROR(message, expression, handler) do { if (!(expression)) { \
+  LWIP_PLATFORM_DIAG(("Assertion \"%s\" failed at line %d in %s\n", message, __LINE__, __FILE__)); \
+  handler;} } while(0)
+
+#ifdef _MSC_VER
+/* C runtime functions redefined */
+#if _MSC_VER < 1910
+#define snprintf _snprintf
+#endif
+#define strdup   _strdup
+#endif
+
+/* Define an example for LWIP_PLATFORM_DIAG: since this uses varargs and the old
+* C standard lwIP targets does not support this in macros, we have extra brackets
+* around the arguments, which are left out in the following macro definition:
+*/
+// #if !defined(LWIP_TESTMODE) || !LWIP_TESTMODE
+// void lwip_win32_platform_diag(const char *format, ...);
+// #define LWIP_PLATFORM_DIAG(x) lwip_win32_platform_diag x
+// #endif
 
 extern unsigned int lwip_port_rand(void);
-#define LWIP_RAND() (lwip_port_rand())
+#define LWIP_RAND() ((uint32_t)lwip_port_rand())
 
+#define PPP_INCLUDE_SETTINGS_HEADER
 
 #endif /* LWIP_ARCH_CC_H */

@@ -40,8 +40,10 @@ int luat_uart_close(int uart_id) {
 }
 
 int luat_uart_exist(int uart_id) {
-    if (uart_id < 0 || uart_id >= 16)
+    if (uart_id < 0 || uart_id >= 128) {
+        LLOGE("当前仅支持128个uart, 请检查id");
         return 0;
+    }
     if (uart_drvs[uart_id] != NULL)
         return 1;
     return 0;

@@ -95,18 +95,16 @@ int main(int argc, char** argv) {
     #endif
 
     #ifdef LUAT_USE_LWIP
-    #ifdef LUAT_USE_WINDOWS
     extern void luat_lwip_init(void);
-    // LLOGD("初始化lwip");
+    LLOGD("初始化lwip");
     luat_lwip_init();
-    #endif
     #endif
 
     // uv_thread_t l_main;
     // 加一个NOP的timer，防止uv_run 立即退出
     uv_timer_t t;
     uv_timer_init(main_loop, &t);
-    #ifdef defined(LUAT_USE_LWIP) && defined(LUAT_USE_ZLINK) && defined(LUAT_USE_WINDOWS)
+    #if defined(LUAT_USE_LWIP)
     uv_timer_start(&t, timer_lwip, 5, 5);
     #else
     uv_timer_start(&t, timer_nop, 1000, 1000);
@@ -137,6 +135,9 @@ static void lvgl_timer_cb(uv_timer_t* lvgl_timer) {
 }
 #endif
 
+
+void sys_check_timeouts(void);
 static void timer_lwip(uv_timer_t *handle) {
-    
+    (void)handle;
+    sys_check_timeouts();
 }

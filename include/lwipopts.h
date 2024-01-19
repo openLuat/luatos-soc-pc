@@ -44,10 +44,10 @@
 #define LWIP_NETCONN               (NO_SYS==0)
 #define LWIP_NETIF_API             (NO_SYS==0)
 
-#define LWIP_IGMP                  0
-#define LWIP_ICMP                  0
+#define LWIP_IGMP                  1
+#define LWIP_ICMP                  1
 
-#define LWIP_SNMP                  0
+#define LWIP_SNMP                  1
 #define MIB2_STATS                 LWIP_SNMP
 #ifdef LWIP_HAVE_MBEDTLS
 #define LWIP_SNMP_V3               (LWIP_SNMP)
@@ -58,8 +58,8 @@
 
 #define LWIP_NUM_NETIF_CLIENT_DATA (LWIP_MDNS_RESPONDER)
 
-#define LWIP_HAVE_LOOPIF           0
-#define LWIP_NETIF_LOOPBACK        0
+#define LWIP_HAVE_LOOPIF           1
+#define LWIP_NETIF_LOOPBACK        1
 #define LWIP_LOOPBACK_MAX_PBUFS    10
 
 #define TCP_LISTEN_BACKLOG         1

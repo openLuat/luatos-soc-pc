@@ -64,7 +64,9 @@ static int luat_uart_list(uint8_t* list, size_t buff_len){
 
 static int uart_setup_win32(void* userdata, luat_uart_t* uart)
 {
+    // LLOGD("执行uart_setup_win32");
     int ret = luat_uart_open_extern(uart->id,uart->baud_rate,uart->data_bits,uart->stop_bits,uart->parity);
+    // LLOGD("执行uart_setup_win32 %d", ret);
     if (ret == 0) {
         luat_uart_recv_cb_extern(uart->id,luat_uart_recv_cb);
     }

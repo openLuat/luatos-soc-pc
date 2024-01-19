@@ -241,12 +241,13 @@ target("luatos-lua")
     add_files(luatos.."components/fatfs/**.c")
 
     if is_host("windows") then
-        print("===================================")
         -- lwip & zlink
         add_includedirs("lwip/include")
         add_files("lwip/api/**.c")
         add_files("lwip/core/**.c")
         add_files("lwip/netif/**.c")
+
+        add_files(luatos .. "components/network/ulwip/binding/*.c")
     end
     if os.getenv("LUAT_USE_GUI") == "y" then
         add_files("ui/*.c")
