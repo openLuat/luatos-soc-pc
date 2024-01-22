@@ -328,7 +328,8 @@
 // 注意这里是 LUAT_USE_WINDOWS
 #ifdef _WIN32
 #define LUAT_USE_LWIP 1
-// #define LUAT_USE_ULWIP 1
+#define LUAT_USE_ULWIP 1
+#define LUAT_USE_DNS 1
 #endif
 
 #endif
