@@ -1085,6 +1085,8 @@ void luat_network_init(void)
     uv_timer_start(t, ip_ready_timer_cb, 500, 0);
 }
 
+#ifndef LUAT_USE_LWIP
 int net_lwip_check_all_ack(int socket_id) {
     return 0;
 }
+#endif
