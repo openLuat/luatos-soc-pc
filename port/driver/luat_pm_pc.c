@@ -145,3 +145,8 @@ int luat_pm_set_power_mode(uint8_t mode, uint8_t sub_mode) {
     (void)sub_mode;
     return 0;
 }
+
+uint32_t luat_pm_dtimer_remain(int id){
+	return 0;
+}
+
