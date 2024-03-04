@@ -44,14 +44,11 @@ void luat_log_log(int level, const char* tag, const char* _fmt, ...) {
     if (luat_log_level_cur > level) return;
     char buff[LOGLOG_SIZE] = {0};
     char *tmp = (char *)buff;
-    // uint64_t t = luat_mcu_tick64();
-    // uint64_t sec = t / 1000 / 1000;
-    // uint32_t ms = (uint32_t)((t / 1000) % 1000);
-    // sprintf_(tmp, "[%08llu", sec);
-    // sprintf_(tmp + strlen(tmp), ".%03lu] ", ms);
-    // uint64_t s = t / 1000 / 1000;
-    // sprintf_(tmp, "[%08lu.%03lu] ", t / 1000, t % 1000);
-    // tmp += strlen(tmp);
+    uint64_t t = luat_mcu_tick64_ms();
+    uint32_t sec = t / 1000;
+    uint32_t ms = t % 1000;
+    sprintf_(tmp, "[%08lu.%03lu]", sec, ms);
+    tmp += strlen(tmp);
     switch (level)
         {
         case LUAT_LOG_DEBUG:
@@ -73,8 +70,11 @@ void luat_log_log(int level, const char* tag, const char* _fmt, ...) {
     tmp ++;
     tmp[0] = '/';
     tmp ++;
-    memcpy(tmp, tag, strlen(tag));
-    tmp += strlen(tag);
+    size_t taglen = strlen(tag);
+    if (taglen > LOGLOG_SIZE / 2)
+        taglen = LOGLOG_SIZE / 2;
+    memcpy(tmp, tag, taglen);
+    tmp += taglen;
     tmp[0] = ' ';
     tmp ++;
 
