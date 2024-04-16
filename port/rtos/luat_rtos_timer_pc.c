@@ -112,8 +112,10 @@ int luat_rtos_timer_delete(luat_rtos_timer_t timer_handle)
 int luat_rtos_timer_start(luat_rtos_timer_t timer_handle, uint32_t timeout, uint8_t repeat, luat_rtos_timer_callback_t callback_fun, void *user_param)
 {
     int ret = 0;
+	if (!timer_handle) {
+        return -1;
+    }
     uv_mutex_lock(&timer_lock);
-	if (!timer_handle) return -1;
 	uv_timer_t *t = (uv_timer_t *)timer_handle;
     ((timer_data_t*)t->data)->is_repeat = repeat;
     ((timer_data_t*)t->data)->timeout = timeout;
@@ -137,4 +139,17 @@ void luat_rtos_task_sleep(uint32_t ms) {
     if (ms > 0) {
         uv_sleep(ms);
     }
+}
+
+int luat_rtos_timer_is_active(luat_rtos_timer_t timer_handle) {
+
+    int ret = 0;
+	if (!timer_handle) {
+        return -1;
+    }
+	uv_timer_t *t = (uv_timer_t *)timer_handle;
+    if (uv_timer_get_due_in(t) > 0) {
+        return 1;
+    }
+    return 0;
 }
