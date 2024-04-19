@@ -8,7 +8,7 @@
 
 ### windows平台
 
-需要安装vs 2015及以上的版本
+需要安装vs 2022版本, 安装"C++ 桌面开发"组件
 
 ```
 build_windows_32bit_msvc.bat
