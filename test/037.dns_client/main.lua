@@ -87,7 +87,7 @@ local function decode_dns_resp(rxbuff)
                 local ip1,ip2,ip3,ip4 = rxbuff[pos], rxbuff[pos+1], rxbuff[pos+2], rxbuff[pos+3]
                 local ip = string.format("%d.%d.%d.%d", ip1, ip2, ip3, ip4)
                 log.info("dns", "IP", ip)
-                return {ip=ip,ttl=ttl}
+                -- return {ip=ip,ttl=ttl}
             end
             pos = pos + len
         else
@@ -157,6 +157,10 @@ sys.taskInit(function()
     sys.wait(500)
 
     make_dns_query(txid, "air724ug.cn", txbuff)
+    socket.tx(netc, txbuff)
+    sys.wait(500)
+
+    make_dns_query(txid, "aliyun.com", txbuff)
     socket.tx(netc, txbuff)
     sys.wait(500)
 
