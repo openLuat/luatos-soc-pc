@@ -249,10 +249,8 @@ target("luatos-lua")
 
         
         add_includedirs(luatos .. "components/network/ulwip/include")
-        add_files(luatos .. "components/network/ulwip/binding/*.c")
-        -- add_files(luatos .. "components/network/lwip_with_sdk/*.c")
-        -- add_includedirs(luatos .. "components/network/lwip_with_sdk/")
-        -- add_defines("__USE_SDK_LWIP__", "LWIP_NUM_SOCKETS=8")
+        add_files(luatos .. "components/network/ulwip/**.c")
+        
         add_files(luatos .. "components/network/adapter_lwip2/*.c")
         add_includedirs(luatos .. "components/network/adapter_lwip2/")
         add_files(luatos .. "components/ethernet/common/*.c")
