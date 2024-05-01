@@ -42,6 +42,8 @@
 // #define LV_USE_LOG 1
 // #define LUAT_LV_DEBUG 1
 
+#define MQTT_RECV_BUF_LEN_MAX (32*1024)
+
 //----------------------------
 // 外设,按需启用, 最起码启用uart和wdt库
 #define LUAT_USE_UART 1
