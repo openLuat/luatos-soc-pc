@@ -136,3 +136,11 @@ void luat_os_entry_cri(void) {
 void luat_os_exit_cri(void) {
     
 }
+
+uint32_t luat_rtos_entry_critical(void) {
+    return 0;
+}
+
+void luat_rtos_exit_critical(uint32_t critical) {
+    // nop
+}
