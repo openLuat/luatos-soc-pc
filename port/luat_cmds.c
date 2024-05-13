@@ -4,138 +4,30 @@
 #include "luat_malloc.h"
 #include "lundump.h"
 #include "luat_mock.h"
+#include "luat_luadb2.h"
 
 #define LUAT_LOG_TAG "fs"
 #include "luat_log.h"
 
 #include "dirent.h"
 
-extern const struct luat_vfs_filesystem vfs_fs_posix;
-extern const struct luat_vfs_filesystem vfs_fs_luadb;
-extern const struct luat_vfs_filesystem vfs_fs_ram;
-
 extern int cmdline_argc;
 extern char **cmdline_argv;
 
+// luadb数据的上下文
+luat_luadb2_ctx_t luadb_ctx = {0};
 char *luadb_ptr;
-static size_t luadb_offset;
-static int luadb_init(void)
-{
-	char *tmp = luat_heap_malloc(0x20);
-	size_t offset = 0;
-	// magic of luadb
-	tmp[offset + 0] = 0x01;
-	tmp[offset + 1] = 0x04;
-	tmp[offset + 2] = 0x5A;
-	tmp[offset + 3] = 0xA5;
-	tmp[offset + 4] = 0x5A;
-	tmp[offset + 5] = 0xA5;
-	offset += 6;
 
-	// version 0x00 0x02
-	tmp[offset + 0] = 0x02;
-	tmp[offset + 1] = 0x02;
-	tmp[offset + 2] = 0x02;
-	tmp[offset + 3] = 0x00;
-	offset += 4;
-
-	// headers total size
-	tmp[offset + 0] = 0x03;
-	tmp[offset + 1] = 0x04;
-	tmp[offset + 2] = 0x00;
-	tmp[offset + 3] = 0x00;
-	tmp[offset + 4] = 0x00;
-	tmp[offset + 5] = 0x18;
-	offset += 6;
-
-	// file count
-	tmp[offset + 0] = 0x04;
-	tmp[offset + 1] = 0x02;
-	tmp[offset + 2] = 0x00;
-	tmp[offset + 3] = 0x00;
-	offset += 4;
-
-	// crc
-	tmp[offset + 0] = 0xFE;
-	tmp[offset + 1] = 0x02;
-	tmp[offset + 2] = 0x00;
-	tmp[offset + 3] = 0x00;
-	offset += 4;
-
-	luadb_ptr = tmp;
-	luadb_offset = offset;
-	return 0;
-}
-
-static int luadb_addfile(const char *name, char *data, size_t len)
-{
-	if (luadb_ptr == NULL)
-	{
-		luadb_init();
-	}
-	if (luadb_ptr == NULL)
-	{
-		return -1;
-	}
-	size_t offset = luadb_offset;
-	char *tmp = luat_heap_realloc(luadb_ptr, luadb_offset + len + 512);
-	if (tmp == NULL)
-	{
-		return -2;
-	}
-
-	// 如果是lua文件, 执行预处理
-
-	// 下面是文件了
-
-	// magic of file
-	tmp[offset + 0] = 0x01;
-	tmp[offset + 1] = 0x04;
-	tmp[offset + 2] = 0x5A;
-	tmp[offset + 3] = 0xA5;
-	tmp[offset + 4] = 0x5A;
-	tmp[offset + 5] = 0xA5;
-	offset += 6;
-
-	// name of file
-	tmp[offset + 0] = 0x02;
-	tmp[offset + 1] = (uint8_t)(strlen(name) & 0xFF);
-	memcpy(tmp + offset + 2, name, strlen(name));
-	offset += 2 + strlen(name);
-
-	// len of file data
-	tmp[offset + 0] = 0x03;
-	tmp[offset + 1] = 0x04;
-	tmp[offset + 2] = (len >> 0) & 0xFF;
-	tmp[offset + 3] = (len >> 8) & 0xFF;
-	tmp[offset + 4] = (len >> 16) & 0xFF;
-	tmp[offset + 5] = (len >> 24) & 0xFF;
-	offset += 6;
-
-	// crc
-	tmp[offset + 0] = 0xFE;
-	tmp[offset + 1] = 0x02;
-	tmp[offset + 2] = 0x00;
-	tmp[offset + 3] = 0x00;
-	offset += 4;
-
-	memcpy(tmp + offset, data, len);
-
-	offset += len;
-
-	luadb_offset = offset;
-	luadb_ptr = tmp;
-
-	// 调整文件数量, TODO 兼容256个以上的文件
-	luadb_ptr[0x12]++;
-
-	return 0;
-}
+// 导出luadb数据的路径,默认是导出
+char luadb_dump_path[1024];
+// 脚本lua文件转luac时,是否删除调试信息,默认不删
+int luac_strip;
+int luadb_dump_only;
 
 void *check_file_path(const char *path);
 
-static int load_luadb(const char *path);
-static int load_luatools(const char *path);
+static int luat_cmd_load_luadb(const char *path);
+static int luat_cmd_load_luatools(const char *path);
 
 static int is_opts(const char *key, const char *arg)
 {
@@ -152,13 +44,14 @@ int luat_cmd_parse(int argc, char **argv)
 	{
 		return 0;
 	}
+	luat_luadb2_init(&luadb_ctx);
 	for (size_t i = 1; i < (size_t)argc; i++)
 	{
 		const char *arg = argv[i];
 		// 加载luadb文件镜像直接启动
 		if (is_opts("--load_luadb=", arg))
 		{
-			if (load_luadb(arg + strlen("--load_luadb=")))
+			if (luat_cmd_load_luadb(arg + strlen("--load_luadb=")))
 			{
 				LLOGE("加载luadb镜像失败");
 				return -1;
@@ -167,7 +60,7 @@ int luat_cmd_parse(int argc, char **argv)
 		}
 		if (is_opts("--ldb=", arg))
 		{
-			if (load_luadb(arg + strlen("--ldb=")))
+			if (luat_cmd_load_luadb(arg + strlen("--ldb=")))
 			{
 				LLOGE("加载luadb镜像失败");
 				return -1;
@@ -177,7 +70,7 @@ int luat_cmd_parse(int argc, char **argv)
 		// 加载LuaTools项目文件直接启动
 		if (is_opts("--load_luatools=", arg))
 		{
-			if (load_luatools(arg + strlen("--load_luatools=")))
+			if (luat_cmd_load_luatools(arg + strlen("--load_luatools=")))
 			{
 				LLOGE("加载luatools项目文件失败");
 				return -1;
@@ -186,7 +79,7 @@ int luat_cmd_parse(int argc, char **argv)
 		}
 		if (is_opts("--llt=", arg))
 		{
-			if (load_luatools(arg + strlen("--llt=")))
+			if (luat_cmd_load_luatools(arg + strlen("--llt=")))
 			{
 				LLOGE("加载luatools项目文件失败");
 				return -1;
@@ -205,16 +98,63 @@ int luat_cmd_parse(int argc, char **argv)
 			continue;
 		}
 
+		// 导出luadb文件
+		if (is_opts("--dump_luadb=", arg))
+		{
+			memcpy(luadb_dump_path, arg + strlen("--dump_luadb="), strlen(arg) - strlen("--dump_luadb="));
+			continue;
+		}
+		
+		if (is_opts("--luac_strip=", arg))
+		{
+			if (!strcmp("--luac_strip=1", arg)) {
+				luac_strip = 1;
+			}
+			else if (!strcmp("--luac_strip=0", arg)) {
+				luac_strip = 0;
+			}
+			else if (!strcmp("--luac_strip=2", arg)) {
+				luac_strip = 2;
+			}
+			continue;
+		}
+		
+		// 是否只导出luadb文件,不启动
+		if (is_opts("--luadb_dump_only=", arg))
+		{
+			// LLOGD("只导出luadb数据");
+			if (!strcmp("--luadb_dump_only=1", arg)) {
+				luadb_dump_only = 1;
+			}
+			continue;
+		}
+
 		if (arg[0] == '-')
 		{
 			continue;
 		}
 		check_file_path(arg);
 	}
+
+	if (luadb_dump_only) {
+		if (luadb_dump_path[0] == 0) {
+			LLOGD("没有指定luadb的导出路径, 使用disk.fs输出");
+			memcpy(luadb_dump_path, "disk.fs", strlen("disk.fs"));
+		}
+		FILE* f = fopen(luadb_dump_path, "wb+");
+		if (f == NULL) {
+			LLOGE("无法打开luadb导出路径 %s", luadb_dump_path);
+			exit(1);
+		}
+		fwrite(luadb_ptr, 1, luadb_ctx.offset, f);
+		fclose(f);
+		exit(0);
+	}
+
 	return 0;
 }
 
-static int load_luadb(const char *path)
+static int luat_cmd_load_luadb(const char *path)
 {
 	long len = 0;
 	FILE *f = fopen(path, "rb");
@@ -236,11 +176,11 @@ static int load_luadb(const char *path)
 	fread(ptr, len, 1, f);
 	fclose(f);
 	luadb_ptr = ptr;
-	luadb_offset = len;
+	// luadb_offset = len;
 	return 0;
 }
 
-static int load_luatools(const char *path)
+static int luat_cmd_load_luatools(const char *path)
 {
 	long len = 0;
 	FILE *f = fopen(path, "rb");
@@ -329,6 +269,8 @@ typedef struct luac_ctx
 	size_t len;
 } luac_ctx_t;
 
+luac_ctx_t* last_ctx = NULL;
+
 static int writer(lua_State *L, const void *p, size_t size, void *u)
 {
 	UNUSED(L);
@@ -364,17 +306,19 @@ static int pmain(lua_State *L)
 		LLOGE("文件加载失败 %s %s", name, lua_tostring(L, -1));
 		return 0;
 	}
-	// LLOGD("luac转换成功,开始转buff");
+	// LLOGD("luac转换成功,开始转buff %s", name);
 	luac_ctx_t *ctx = luat_heap_malloc(sizeof(luac_ctx_t));
 	memset(ctx, 0, sizeof(luac_ctx_t));
 	// LLOGD("getproto ");
 	const Proto *f = getproto(L->top - 1);
 	// LLOGD("Proto %p", f);
-	ret = luaU_dump(L, f, writer, ctx, 0);
+	ret = luaU_dump(L, f, writer, ctx, luac_strip);
 	// LLOGD("luaU_dump 执行完成");
 	if (ret == 0)
 	{
-		luadb_addfile(name, ctx->ptr, ctx->len);
+		// luadb_addfile(name, ctx->ptr, ctx->len);
+		luat_luadb2_write(&luadb_ctx, name, ctx->ptr, ctx->len);
+		luadb_ptr = luadb_ctx.dataptr;
 	}
 	lua_pushinteger(L, ret);
 	luat_heap_free(ctx->ptr);
@@ -384,7 +328,7 @@ static int pmain(lua_State *L)
 
 static int to_luac(const char *fullpath, const char *name, char *data, size_t len)
 {
-	// LLOGD("检查语法并转换成luac %s", name);
+	// LLOGD("检查语法并转换成luac %s 路径 %s", name, fullpath);
 	lua_State *L = lua_newstate(luat_heap_alloc, NULL);
 	// LLOGD("创建临时luavm");
 	lua_pushcfunction(L, &pmain);
@@ -449,7 +393,9 @@ static int add_onefile(const char *path)
 	}
 	else
 	{
-		ret = luadb_addfile(tmpname, tmp, len);
+		// ret = luadb_addfile(tmpname, tmp, len);
+		ret = luat_luadb2_write(&luadb_ctx, tmpname, tmp, len);
+		luadb_ptr = luadb_ctx.dataptr;
 	}
 	luat_heap_free(tmp);
 	return ret;
@@ -517,4 +463,59 @@ void *check_file_path(const char *path)
 		return luadb_ptr;
 	}
 	// return NULL;
+}
+
+// 加载并分析文件
+int luat_cmd_load_and_analyse(const char *path)
+{
+	size_t len = 0;
+	int ret = 0;
+	// LLOGD("把%s当做main.lua运行", path);
+	char tmpname[512] = {0};
+	FILE *f = fopen(path, "rb");
+	if (!f)
+	{
+		LLOGE("文件不存在 %s", path);
+		return -1;
+	}
+	fseek(f, 0, SEEK_END);
+	len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+	// void* fptr = luat_heap_malloc(len);
+	char *tmp = luat_heap_malloc(len);
+	if (tmp == NULL)
+	{
+		fclose(f);
+		LLOGE("文件太大,内存放不下 %s", path);
+		return -2;
+	}
+	fread(tmp, 1, len, f);
+	fclose(f);
+
+	for (size_t i = strlen(path); i > 0; i--)
+	{
+		if (path[i - 1] == '/' || path[i - 1] == '\\')
+		{
+			memcpy(tmpname, path + i, strlen(path) - 1);
+			break;
+		}
+	}
+	if (tmpname[0] == 0x00)
+	{
+		memcpy(tmpname, path, strlen(path));
+	}
+
+	if (!memcmp(path + strlen(path) - 4, ".lua", 4))
+	{
+
+		ret = to_luac(path, tmpname, tmp, len);
+	}
+	else
+	{
+		// ret = luadb_addfile(tmpname, tmp, len);
+		ret = luat_luadb2_write(&luadb_ctx, tmpname, tmp, len);
+		luadb_ptr = luadb_ctx.dataptr;
+	}
+	luat_heap_free(tmp);
+	return ret;
 }
