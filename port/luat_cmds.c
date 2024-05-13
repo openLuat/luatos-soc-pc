@@ -307,7 +307,7 @@ static int pmain(lua_State *L)
 		LLOGE("文件加载失败 %s %s", name, lua_tostring(L, -1));
 		return 0;
 	}
-	LLOGD("luac转换成功,开始转buff %s", name);
+	// LLOGD("luac转换成功,开始转buff %s", name);
 	luac_ctx_t *ctx = luat_heap_malloc(sizeof(luac_ctx_t));
 	memset(ctx, 0, sizeof(luac_ctx_t));
 	// LLOGD("getproto ");
