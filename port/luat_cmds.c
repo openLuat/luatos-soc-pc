@@ -141,6 +141,7 @@ int luat_cmd_parse(int argc, char **argv)
 			LLOGD("没有指定luadb的导出路径, 使用disk.fs输出");
 			memcpy(luadb_dump_path, "disk.fs", strlen("disk.fs"));
 		}
+		LLOGD("导出luadb数据到 %s 大小 %d", luadb_dump_path, luadb_ctx.offset);
 		FILE* f = fopen(luadb_dump_path, "wb+");
 		if (f == NULL) {
 			LLOGE("无法打开luadb导出路径 %s", luadb_dump_path);
@@ -306,13 +307,24 @@ static int pmain(lua_State *L)
 		LLOGE("文件加载失败 %s %s", name, lua_tostring(L, -1));
 		return 0;
 	}
-	// LLOGD("luac转换成功,开始转buff %s", name);
+	LLOGD("luac转换成功,开始转buff %s", name);
 	luac_ctx_t *ctx = luat_heap_malloc(sizeof(luac_ctx_t));
 	memset(ctx, 0, sizeof(luac_ctx_t));
 	// LLOGD("getproto ");
 	const Proto *f = getproto(L->top - 1);
 	// LLOGD("Proto %p", f);
-	ret = luaU_dump(L, f, writer, ctx, luac_strip);
+	if (luac_strip) {
+		if (luac_strip == 1 && !strcmp("main.lua", name)) {
+			ret = luaU_dump(L, f, writer, ctx, 0);
+		}
+		else {
+			ret = luaU_dump(L, f, writer, ctx, 1);
+		}
+	}
+	else {
+		ret = luaU_dump(L, f, writer, ctx, luac_strip);
+	}
+	
 	// LLOGD("luaU_dump 执行完成");
 	if (ret == 0)
 	{
