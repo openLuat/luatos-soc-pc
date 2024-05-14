@@ -21,13 +21,17 @@ char *luadb_ptr;
 // 导出luadb数据的路径,默认是导出
 char luadb_dump_path[1024];
 // 脚本lua文件转luac时,是否删除调试信息,默认不删
-int luac_strip;
-int luadb_dump_only;
+int cfg_luac_strip;
+int cfg_dump_luadb;
+int cfg_dump_report;
+int cfg_norun;
 
 void *check_file_path(const char *path);
 
 static int luat_cmd_load_luadb(const char *path);
 static int luat_cmd_load_luatools(const char *path);
+
+int luadb_do_report(luat_luadb2_ctx_t *ctx);
 
 static int is_opts(const char *key, const char *arg)
 {
@@ -108,23 +112,40 @@ int luat_cmd_parse(int argc, char **argv)
 		if (is_opts("--luac_strip=", arg))
 		{
 			if (!strcmp("--luac_strip=1", arg)) {
-				luac_strip = 1;
+				cfg_luac_strip = 1;
 			}
 			else if (!strcmp("--luac_strip=0", arg)) {
-				luac_strip = 0;
+				cfg_luac_strip = 0;
 			}
 			else if (!strcmp("--luac_strip=2", arg)) {
-				luac_strip = 2;
+				cfg_luac_strip = 2;
 			}
 			continue;
 		}
 		
-		// 是否只导出luadb文件,不启动
-		if (is_opts("--luadb_dump_only=", arg))
+		// 是否导出luadb文件
+		if (is_opts("--luadb_dump=", arg))
 		{
 			// LLOGD("只导出luadb数据");
-			if (!strcmp("--luadb_dump_only=1", arg)) {
-				luadb_dump_only = 1;
+			if (!strcmp("--luadb_dump=1", arg)) {
+				cfg_dump_luadb = 1;
+			}
+			continue;
+		}
+		if (is_opts("--luac_report=", arg))
+		{
+			// LLOGD("只导出luadb数据");
+			if (!strcmp("--luac_report=1", arg)) {
+				cfg_dump_report = 1;
+			}
+			continue;
+		}
+		// 是否导出luadb文件
+		if (is_opts("--norun=", arg))
+		{
+			// LLOGD("只导出luadb数据");
+			if (!strcmp("--norun=1", arg)) {
+				cfg_norun = 1;
 			}
 			continue;
 		}
@@ -136,7 +157,11 @@ int luat_cmd_parse(int argc, char **argv)
 		check_file_path(arg);
 	}
 
-	if (luadb_dump_only) {
+	if (cfg_dump_report) {
+		luadb_do_report(&luadb_ctx);
+	}
+
+	if (cfg_dump_luadb) {
 		if (luadb_dump_path[0] == 0) {
 			LLOGD("没有指定luadb的导出路径, 使用disk.fs输出");
 			memcpy(luadb_dump_path, "disk.fs", strlen("disk.fs"));
@@ -149,6 +174,9 @@ int luat_cmd_parse(int argc, char **argv)
 		}
 		fwrite(luadb_ptr, 1, luadb_ctx.offset, f);
 		fclose(f);
+	}
+
+	if (cfg_norun) {
 		exit(0);
 	}
 
@@ -313,8 +341,8 @@ static int pmain(lua_State *L)
 	// LLOGD("getproto ");
 	const Proto *f = getproto(L->top - 1);
 	// LLOGD("Proto %p", f);
-	if (luac_strip) {
-		if (luac_strip == 1 && !strcmp("main.lua", name)) {
+	if (cfg_luac_strip) {
+		if (cfg_luac_strip == 1 && !strcmp("main.lua", name)) {
 			ret = luaU_dump(L, f, writer, ctx, 0);
 		}
 		else {
@@ -322,7 +350,7 @@ static int pmain(lua_State *L)
 		}
 	}
 	else {
-		ret = luaU_dump(L, f, writer, ctx, luac_strip);
+		ret = luaU_dump(L, f, writer, ctx, 0);
 	}
 	
 	// LLOGD("luaU_dump 执行完成");
