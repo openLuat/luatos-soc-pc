@@ -436,6 +436,34 @@ int luadb_do_report(luat_luadb2_ctx_t *ctx) {
     LLOGD("                       分类汇总报告");
     LLOGD("==============================================================\r\n");
     // 分类报告
+
+    // 文件信息表格
+    size_t file_max_len = 0;
+    size_t file_total_len = 0;
+    LLOGD("==============================================================");
+    LLOGD("                        文件信息统计");
+    LLOGD("==============================================================\r\n");
+    LLOGD("| 文件名                         | 大小   | 类型   |");
+    LLOGD("|--------------------------------|--------|--------|");
+    for (size_t i = 0; i < ctx->fs->filecount; i++) {
+        if (cfs[i].report) {
+            LLOGD("| %-30s | %6d | %s |", cfs[i].source_file, cfs[i].fileSize, "脚本文件");
+        }
+        else {
+            LLOGD("| %-30s | %6d | %s |", cfs[i].source_file, cfs[i].fileSize, "资源文件");
+        }
+        // 统计全局最长的文件名
+        if(cfs[i].fileSize > file_max_len) {
+            file_max_len = cfs[i].fileSize;
+        }
+        // 统计全部文件的大小
+        file_total_len += cfs[i].fileSize;
+    }
+    LLOGD("| %-30s | %6d | %s |", "total", file_total_len, "总计");
+    LLOGD("| %-30s | %6d | %s |", "max", file_max_len, "最大");
+    LLOGD("| %-30s | %6d | %s |", "avg", file_total_len / (ctx->fs->filecount > 0 ? ctx->fs->filecount : 1), "平均");
+    LLOGD("==============================================================\r\n");
+
     // 字符串表格
     LLOGD("==============================================================");
     LLOGD("                        字符串统计");
