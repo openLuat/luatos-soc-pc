@@ -48,6 +48,7 @@ typedef struct luac_report {
     size_t str_max;
     size_t str_hits;
     size_t str_total;
+    size_t str_emtrys;
 
     // 函数类
     size_t func_max;
@@ -332,6 +333,7 @@ int luadb_print_report_file(luac_file_t *cf) {
     size_t max_len = 0;
     size_t total_len = 0;
     size_t hits = 0;
+    size_t emtry = 0;
     luac_report_t* rpt = cf->report;
     for (size_t i = 0; i < rpt->str_count; i++) {
         if (rpt->strs[i].len > max_len) {
@@ -339,6 +341,10 @@ int luadb_print_report_file(luac_file_t *cf) {
         }
         total_len += rpt->strs[i].len;
         // 使用统计不重复的字符串
+        if (rpt->strs[i].len == 0 || rpt->strs[i].len == 1) {
+          emtry++;
+          continue;
+        }
         hits++;
         if (i > 0) {
             for (size_t j = 0; j < i; j++)
@@ -358,6 +364,7 @@ int luadb_print_report_file(luac_file_t *cf) {
     rpt->str_max = max_len;
     rpt->str_total = total_len;
     rpt->str_hits = hits;
+    rpt->str_emtrys = emtry;
 
     // 函数类统计
     // 函数数量
@@ -369,7 +376,7 @@ int luadb_print_report_file(luac_file_t *cf) {
         if (rpt->codes[i].len > max_code_len) {
             max_code_len = rpt->codes[i].len;
         }
-        total_code_len += rpt->codes[i].len;
+        total_code_len += (rpt->codes[i].len > 1 ? rpt->codes[i].len - 1 : 0);
     }
     
     LLOGD("函数:   数量 %8d", rpt->code_count);
@@ -423,7 +430,7 @@ int luadb_do_report(luat_luadb2_ctx_t *ctx) {
     LLOGD("==============================================================\r\n\r\n");
 
     // TODO 打印抬头
-
+    memset(report, 0, sizeof(luac_report_t));
     // 打印单文件报告
     for (size_t i = 0; i < ctx->fs->filecount; i++)
     {
@@ -447,10 +454,10 @@ int luadb_do_report(luat_luadb2_ctx_t *ctx) {
     LLOGD("|--------------------------------|--------|--------|");
     for (size_t i = 0; i < ctx->fs->filecount; i++) {
         if (cfs[i].report) {
-            LLOGD("| %-30s | %6d | %s |", cfs[i].source_file, cfs[i].fileSize, "脚本文件");
+            LLOGD("| %-30s | %6d | %s |", cfs[i].source_file, cfs[i].fileSize, "脚本");
         }
         else {
-            LLOGD("| %-30s | %6d | %s |", cfs[i].source_file, cfs[i].fileSize, "资源文件");
+            LLOGD("| %-30s | %6d | %s |", cfs[i].source_file, cfs[i].fileSize, "资源");
         }
         // 统计全局最长的文件名
         if(cfs[i].fileSize > file_max_len) {
@@ -468,27 +475,52 @@ int luadb_do_report(luat_luadb2_ctx_t *ctx) {
     LLOGD("==============================================================");
     LLOGD("                        字符串统计");
     LLOGD("==============================================================\r\n");
-    LLOGD("| 文件名                         | 数量   | 最大长度 | 平均长度 | 总长度  | 去重数量 | 占比   |");
-    LLOGD("|--------------------------------|--------|----------|----------|---------|-----------|--------|");
+    LLOGD("| 文件名                         | 非空   |   全部 | 最大长度 | 平均长度 | 总长度  | 去重数量  | 占比   |");
+    LLOGD("|--------------------------------|--------|--------|----------|----------|---------|-----------|--------|");
     for (size_t i = 0; i < ctx->fs->filecount; i++) {
         if (cfs[i].report) {
-            LLOGD("| %-30s | %6d | %8d | %8d | %7d | %9d | %5d%% |", cfs[i].source_file, cfs[i].report->str_count, cfs[i].report->str_max, cfs[i].report->str_total / (cfs[i].report->str_count > 0 ? cfs[i].report->str_count : 1), cfs[i].report->str_total, cfs[i].report->str_hits, cfs[i].report->str_hits * 100 / (cfs[i].report->str_count > 0 ? cfs[i].report->str_count : 1));
+            LLOGD("| %-30s | %6d | %6d | %8d | %8d | %7d | %9d | %5d%% |", cfs[i].source_file, cfs[i].report->str_count - cfs[i].report->str_emtrys, cfs[i].report->str_count, cfs[i].report->str_max, cfs[i].report->str_total / (cfs[i].report->str_count > 0 ? cfs[i].report->str_count : 1), cfs[i].report->str_total, cfs[i].report->str_hits, cfs[i].report->str_hits * 100 / (cfs[i].report->str_count > 0 ? cfs[i].report->str_count : 1));
             // 统计全局最长的字符串
             if(cfs[i].report->str_max > report->str_max) {
                 report->str_max = cfs[i].report->str_max;
             }
             // 统计全部字符串的数量
-            report->str_count += cfs[i].report->str_count;
+            // report->str_count += cfs[i].report->str_count;
             // 统计全部字符串的长度
             report->str_total += cfs[i].report->str_total;
-            // 统计全部字符串的不重复数量
-            if(cfs[i].report->str_hits > report->str_hits) {
-                report->str_hits = cfs[i].report->str_hits;
-            } 
+            for (size_t j = 0; j < cfs[i].report->str_count; j++)
+            {
+              report->strs[report->str_count] = cfs[i].report->strs[j];
+              report->str_count++;
+            }
+            // LLOGD("report->str_count %d", report->str_count);
+        }
+    }
+    // 找出全部字符串中不重复的字符串
+    for (size_t i = 0; i < report->str_count; i++)
+    {
+        if (report->strs[i].len == 0 || report->strs[i].len == 1) {
+          report->str_emtrys ++;
+          continue;
+        }
+        report->str_hits ++;
+        int hit = 0;
+        for (size_t j = 0; j < i; j++)
+        {
+          if(report->strs[i].len == report->strs[j].len && memcmp(report->strs[i].data, report->strs[j].data, report->strs[i].len) == 0) {
+              // 重复的字符串
+              report->str_hits --;
+              hit = 1;
+              break;
+          }
+        }
+        if (hit == 0) {
+          // 未重复的字符串
+          // LLOGD("不重复的字符串 %s", report->strs[i].data);
         }
     }
     // 汇总
-    LLOGD("| %-30s | %6d | %8d | %8d | %7d | %9d | %5d%% |", "total", report->str_count, report->str_max, report->str_total / (report->str_count > 0 ? report->str_count : 1), report->str_total, report->str_hits, report->str_hits * 100 / (report->str_count > 0 ? report->str_count : 1));
+    LLOGD("| %-30s | %6d | %6d | %8d | %8d | %7d | %9d | %5d%% |", "total", report->str_count - report->str_emtrys, report->str_count, report->str_max, report->str_total / (report->str_count > 0 ? report->str_count : 1), report->str_total, report->str_hits, report->str_hits * 100 / (report->str_count > 0 ? report->str_count : 1));
     LLOGD("=============================================================\r\n");
 
     // 函数统计
