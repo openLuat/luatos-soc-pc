@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
 
     #ifdef LUAT_USE_LWIP
     extern void luat_lwip_init(void);
-    LLOGD("初始化lwip");
+    //LLOGD("初始化lwip");
     luat_lwip_init();
     #endif
 
