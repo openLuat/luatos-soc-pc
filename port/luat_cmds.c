@@ -122,16 +122,7 @@ int luat_cmd_parse(int argc, char **argv)
 			}
 			continue;
 		}
-		
-		// 是否导出luadb文件
-		if (is_opts("--luadb_dump=", arg))
-		{
-			// LLOGD("只导出luadb数据");
-			if (!strcmp("--luadb_dump=1", arg)) {
-				cfg_dump_luadb = 1;
-			}
-			continue;
-		}
+
 		if (is_opts("--luac_report=", arg))
 		{
 			// LLOGD("只导出luadb数据");
@@ -161,11 +152,7 @@ int luat_cmd_parse(int argc, char **argv)
 		luadb_do_report(&luadb_ctx);
 	}
 
-	if (cfg_dump_luadb) {
-		if (luadb_dump_path[0] == 0) {
-			LLOGD("没有指定luadb的导出路径, 使用disk.fs输出");
-			memcpy(luadb_dump_path, "disk.fs", strlen("disk.fs"));
-		}
+	if (luadb_dump_path[0]) {
 		LLOGD("导出luadb数据到 %s 大小 %d", luadb_dump_path, luadb_ctx.offset);
 		FILE* f = fopen(luadb_dump_path, "wb+");
 		if (f == NULL) {
