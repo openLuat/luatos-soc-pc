@@ -8,79 +8,7 @@
 #include "luat_log.h"
 
 
-typedef struct luac_data {
-    size_t i; // 文件索引
-    char* data;
-    size_t len;
-    char mark;
-}luac_data_t;
-
-typedef struct luac_report {
-    // 预留1M个字符串空间
-    luac_data_t strs[32*1024];
-    size_t str_count;
-
-    // 函数空间 128k 个, 数据部分是函数名, 如果存在的话
-    luac_data_t funcs[32*1024];
-    size_t func_count;
-
-    
-    // 函数代码空间 128k 个
-    luac_data_t codes[32*1024];
-    size_t code_count;
-
-    // 数值空间 128k 个
-    luac_data_t numbers[32*1024];
-    size_t number_count;
-
-    // upvalue 空间 128k 个
-    luac_data_t upvalues[32*1024];
-    size_t upvalue_count;
-
-    // 调试信息中的行数空间 128k 个
-    luac_data_t line_numbers[32*1024];
-    size_t line_number_count;
-
-    
-    // 以下是统计数据
-
-    // 字符串类
-    size_t str_max;
-    size_t str_hits;
-    size_t str_total;
-    size_t str_emtrys;
-
-    // 函数类
-    size_t func_max;
-    size_t func_total;
-    // 代码类
-    size_t code_max;
-    size_t code_total;
-    // 数值类
-    size_t number_max;
-    size_t number_total;
-    // upvalue 类
-    size_t upvalue_max;
-    size_t upvalue_total;
-    // 行数类
-    // size_t line_number_max;
-    // size_t line_number_total;
-} luac_report_t;
-
-
-typedef struct luac_file {
-    char source_file[32];
-    luac_report_t* report;
-    size_t i;
-    const char* ptr;
-    size_t fileSize;
-
-}luac_file_t;
-
-typedef struct TIO {
-    const char* ptr;
-}tio_t;
-
+#include "luat_luac_report.h"
 
 static void LoadFunction(luac_file_t *cf, tio_t* tio, size_t id);
 
@@ -148,6 +76,7 @@ static void LoadConstants (tio_t *tio, luac_file_t* cf) {
   (void)cf;
   int i;
   int n = LoadInt(tio);
+  luac_report_t* rpt = cf->report;
 //   LLOGD("常数数量 %d", n);
   size_t len = 0;
   for (i = 0; i < n; i++) {
@@ -160,19 +89,35 @@ static void LoadConstants (tio_t *tio, luac_file_t* cf) {
       break;
     case LUA_TBOOLEAN:
     //   setbvalue(o, LoadByte(S));
-      LoadByte(tio); // TODO 记录它
+      // LoadByte(tio); // TODO 记录它
+      rpt->numbers.data[rpt->numbers.count].nint = LoadByte(tio);;
+      rpt->numbers.data[rpt->numbers.count].len = sizeof(lua_Integer);
+      rpt->numbers.data[rpt->numbers.count].mark = LUA_TBOOLEAN;
+      rpt->numbers.data[rpt->numbers.count].type = LUA_TBOOLEAN;
+      rpt->numbers.count ++;
       break;
     case LUA_TNUMFLT:
-      LoadNumber(tio);
+      // LoadNumber(tio);
+      rpt->numbers.data[rpt->numbers.count].nnum = LoadNumber(tio);;
+      rpt->numbers.data[rpt->numbers.count].len = sizeof(lua_Integer);
+      rpt->numbers.data[rpt->numbers.count].mark = LUA_TNUMFLT;
+      rpt->numbers.data[rpt->numbers.count].type = LUA_TNUMFLT;
+      rpt->numbers.count ++;
       break;
     case LUA_TNUMINT:
-      LoadInteger(tio);
+      // LoadInteger(tio);
+      rpt->numbers.data[rpt->numbers.count].nint = LoadInteger(tio);
+      rpt->numbers.data[rpt->numbers.count].len = sizeof(lua_Integer);
+      rpt->numbers.data[rpt->numbers.count].mark = 1;
+      rpt->numbers.data[rpt->numbers.count].type = t;
+      rpt->numbers.count ++;
       break;
     case LUA_TSHRSTR:
     case LUA_TLNGSTR:
-      cf->report->strs[cf->report->str_count].data = LoadString(tio, &len);
-      cf->report->strs[cf->report->str_count].len = len;
-      cf->report->str_count ++;
+      rpt->strs.data[rpt->strs.count].data = LoadString(tio, &len);
+      rpt->strs.data[rpt->strs.count].len = len;
+      rpt->strs.data[rpt->strs.count].type = t;
+      rpt->strs.count ++;
       break;
     default:
       LLOGD("不对劲");
@@ -200,7 +145,7 @@ static void LoadProtos (tio_t *tio, luac_file_t *cf) {
   int n = LoadInt(tio);
 //   LLOGD("子函数数量 %d", n);
   for (i = 0; i < n; i++) {
-    LoadFunction(cf, tio, cf->report->func_count);
+    LoadFunction(cf, tio, cf->report->funcs.count);
   }
 }
 
@@ -208,15 +153,15 @@ static void LoadProtos (tio_t *tio, luac_file_t *cf) {
 static void LoadDebug (tio_t *tio, luac_file_t *cf) {
   int i, n;
   n = LoadInt(tio);
-
+  luac_report_t* rpt = cf->report;
 //   LLOGD("debug信息: 行数数据 %04X 当前偏移量 %04X", n, (uint32_t)(tio->ptr - cf->ptr));
   if (n > 0) {
     size_t len = n * sizeof(int);
-    cf->report->line_numbers[cf->report->line_number_count].data = luat_heap_malloc(len);
-    LoadBlock(tio, cf->report->line_numbers[cf->report->line_number_count].data, len);
-    cf->report->line_numbers[cf->report->line_number_count].len = len;
+    rpt->line_numbers.data[rpt->line_numbers.count].data = luat_heap_malloc(len);
+    LoadBlock(tio, rpt->line_numbers.data[rpt->line_numbers.count].data, len);
+    rpt->line_numbers.data[rpt->line_numbers.count].len = len;
   }
-  cf->report->line_number_count ++;
+  rpt->line_numbers.count ++;
 
 
   n = LoadInt(tio);
@@ -224,18 +169,18 @@ static void LoadDebug (tio_t *tio, luac_file_t *cf) {
   size_t len;
   for (i = 0; i < n; i++) {
     // 变量名称
-    cf->report->strs[cf->report->str_count].data = LoadString(tio, &len);
-    cf->report->strs[cf->report->str_count].len = len;
-    cf->report->str_count ++;
+    rpt->strs.data[rpt->strs.count].data = LoadString(tio, &len);
+    rpt->strs.data[rpt->strs.count].len = len;
+    rpt->strs.count ++;
     LoadInt(tio);
     LoadInt(tio);
   }
   n = LoadInt(tio);
 //   LLOGD("debug信息: upvalue变量名 %d", n);
   for (i = 0; i < n; i++) {
-    cf->report->strs[cf->report->str_count].data = LoadString(tio, &len);
-    cf->report->strs[cf->report->str_count].len = len;
-    cf->report->str_count ++;
+    rpt->strs.data[rpt->strs.count].data = LoadString(tio, &len);
+    rpt->strs.data[rpt->strs.count].len = len;
+    rpt->strs.count ++;
     // LLOGD("debug信息: upvalue变量名长度 %d", len);
   }
 }
@@ -245,6 +190,9 @@ static void LoadFunction(luac_file_t *cf, tio_t* tio, size_t id) {
     Proto f2 = {0};
     Proto* f = &f2;
     size_t len = 0;
+
+    luac_report_t* rpt = cf->report;
+
     // char* tmp = NULL;
     LoadString(tio, &len);
     // f->source = LoadString(S, f);
@@ -256,9 +204,9 @@ static void LoadFunction(luac_file_t *cf, tio_t* tio, size_t id) {
     f->is_vararg = LoadByte(tio);
     f->maxstacksize = LoadByte(tio);
 
-    cf->report->codes[cf->report->code_count].data = LoadCode(tio, &len);
-    cf->report->codes[cf->report->code_count].len = len;
-    cf->report->code_count ++;
+    rpt->codes.data[rpt->codes.count].data = LoadCode(tio, &len);
+    rpt->codes.data[rpt->codes.count].len = len;
+    rpt->codes.count ++;
     LoadConstants(tio, cf);
     LoadUpvalues(tio, cf);
     LoadProtos(tio, cf);
@@ -314,77 +262,89 @@ int luadb_do_report_file(luac_file_t *cf, const char* data) {
 
     
     tio_t tio = {.ptr = ptr};
-    LoadFunction(cf, &tio, cf->report->func_count);
+    LoadFunction(cf, &tio, cf->report->funcs.count);
 
     // LLOGD("分析完成");
     return 0;
 }
 
-int luadb_print_report_file(luac_file_t *cf) {
-    // LLOGD("\r\n\r\n\r\n");
-    LLOGD("==============================================================");
-    LLOGD("单文件报告: %s", cf->source_file);
-    LLOGD("文件大小: %d byte", cf->fileSize);
-    // LLOGD("函数数量: %d", cf->report->code_count);
-    // LLOGD("字符串数量: %d", cf->report->str_count);
-    // LLOGD("debug信息: 行号数据 %d byte", cf->report->line_number_count);
-    // 字符串数据分析
-    // 首先, 获取最大长度和总长度
-    size_t max_len = 0;
-    size_t total_len = 0;
+static void do_data_group_report(luac_data_group_t *dg) {
     size_t hits = 0;
-    size_t emtry = 0;
-    luac_report_t* rpt = cf->report;
-    for (size_t i = 0; i < rpt->str_count; i++) {
-        if (rpt->strs[i].len > max_len) {
-            max_len = rpt->strs[i].len;
+    for (size_t i = 0; i < dg->count; i++) {
+        if (dg->data[i].len > dg->max_len) {
+            dg->max_len = dg->data[i].len;
         }
-        total_len += rpt->strs[i].len;
+        dg->total_len += dg->data[i].len;
         // 使用统计不重复的字符串
-        if (rpt->strs[i].len == 0 || rpt->strs[i].len == 1) {
-          emtry++;
+        if (dg->data[i].len == 0 || dg->data[i].len == 1) {
+          dg->emtrys++;
           continue;
         }
         hits++;
-        if (i > 0) {
+        if (i > 0 && dg->data->mark == 0) {
             for (size_t j = 0; j < i; j++)
             {
-                if (rpt->strs[i].len == rpt->strs[j].len && memcmp(rpt->strs[i].data, rpt->strs[j].data, rpt->strs[i].len) == 0) {
+                if (dg->data[i].len == dg->data[j].len && memcmp(dg->data[i].data, dg->data[j].data, dg->data[i].len) == 0) {
                     hits --;
                     break;
                 }
             }
         }
     }
-    
-    LLOGD("字符串: 数量 %8d", cf->report->str_count);
-    LLOGD("字符串: 最长 %8d 平均 %8d 总长 %8d", max_len, total_len / (cf->report->str_count > 0 ? cf->report->str_count : 1), total_len);
-    LLOGD("字符串: 去重 %8d 占比 %8d%%", hits, hits * 100 / (cf->report->str_count > 0 ? cf->report->str_count : 1));
-    
-    rpt->str_max = max_len;
-    rpt->str_total = total_len;
-    rpt->str_hits = hits;
-    rpt->str_emtrys = emtry;
+    dg->uni_count = hits;
+}
 
-    // 函数类统计
-    // 函数数量
-    // cf->func_count = rpt->func_count;
-    // 最大函数大小
-    size_t max_code_len = 0;
-    size_t total_code_len = 0;
-    for (size_t i = 0; i < rpt->code_count; i++) {
-        if (rpt->codes[i].len > max_code_len) {
-            max_code_len = rpt->codes[i].len;
-        }
-        total_code_len += (rpt->codes[i].len > 1 ? rpt->codes[i].len - 1 : 0);
+void luac_data_group_add(luac_data_group_t *src, luac_data_group_t* dst) {
+  for (size_t i = 0; i < src->count; i++) {
+    dst->data[dst->count] = src->data[i];
+    dst->count++;
+  }
+}
+
+int luac_data_report_exec(luac_report_t *rpt, luac_report_t* up_rpt) {
+    // 逐项数据分析
+    do_data_group_report(&rpt->strs);
+    do_data_group_report(&rpt->codes);
+    do_data_group_report(&rpt->funcs);
+    do_data_group_report(&rpt->upvalues);
+    do_data_group_report(&rpt->numbers);
+    do_data_group_report(&rpt->line_numbers);
+
+    // 将数据汇总到上层报告中
+    if (up_rpt) {
+        // 字符串
+        luac_data_group_add(&rpt->strs, &up_rpt->strs);
+        luac_data_group_add(&rpt->codes, &up_rpt->codes);
+        luac_data_group_add(&rpt->funcs, &up_rpt->funcs);
+        luac_data_group_add(&rpt->upvalues, &up_rpt->upvalues);
+        luac_data_group_add(&rpt->numbers, &up_rpt->numbers);
+        luac_data_group_add(&rpt->line_numbers, &up_rpt->line_numbers);
     }
-    
-    LLOGD("函数:   数量 %8d", rpt->code_count);
-    LLOGD("函数:   最长 %8d 平均 %8d 总长 %8d", max_code_len, total_code_len / (rpt->code_count > 0 ? rpt->code_count : 1), total_code_len);
-    
-    rpt->code_max = max_code_len;
-    rpt->code_total = total_code_len;
     return 0;
+}
+
+void luac_data_report_print_group(luac_file_t* cfs, size_t filecount, luac_report_t *rpt, size_t offset, const char* title) {
+    luac_data_group_t* dg = NULL;
+    // 表格
+    LLOGD("=========================================================================================================");
+    LLOGD("                        %s", title);
+    LLOGD("=========================================================================================================\r\n");
+    LLOGD("| 文件名                         | 非空   |   全部 | 最大长度 | 平均长度 | 总长度  | 去重数量  | 占比   |");
+    LLOGD("|--------------------------------|--------|--------|----------|----------|---------|-----------|--------|");
+    for (size_t i = 0; i < filecount; i++) {
+        if (cfs[i].report) {
+            dg = &cfs[i].report->strs + (offset);
+            LLOGD("| %-30s | %6d | %6d | %8d | %8d | %7d | %9d | %5d%% |", cfs[i].source_file, dg->count - dg->emtrys, dg->count, dg->max_len, dg->total_len / (dg->count > 0 ? dg->count : 1), dg->total_len, dg->uni_count, dg->uni_count * 100 / (dg->count > 0 ? dg->count : 1));
+        }
+    }
+    // 汇总
+    dg = &rpt->strs + (offset);
+    LLOGD("| %-30s | %6d | %6d | %8d | %8d | %7d | %9d | %5d%% |", "==total==", dg->count - dg->emtrys, dg->count, dg->max_len, dg->total_len / (dg->count > 0 ? dg->count : 1), dg->total_len, dg->uni_count, dg->uni_count * 100 / (dg->count > 0 ? dg->count : 1));
+    // LLOGD("总长度与去重长度对比: %d %d --> %d%%", report->strs.total_len, str_noemtry_len, str_noemtry_len * 100 / (report->strs.total_len > 0 ? report->strs.total_len : 1));
+    LLOGD("=========================================================================================================\r\n");
+    
+    // LLOGD("子报告的数据数量: %d 指针位置 0x%p", dg->count, dg);
+    // LLOGD("子报告的字符串数据: %d 指针位置 0x%p", dg->count, &dg->data);
 }
 
 int luadb_do_report(luat_luadb2_ctx_t *ctx) {
@@ -435,13 +395,14 @@ int luadb_do_report(luat_luadb2_ctx_t *ctx) {
     for (size_t i = 0; i < ctx->fs->filecount; i++)
     {
         if (cfs[i].report) {
-            luadb_print_report_file(&cfs[i]);
+            luac_data_report_exec(cfs[i].report, report);
         }
     }
+    luac_data_report_exec(report, NULL);
 
-    LLOGD("==============================================================");
-    LLOGD("                       分类汇总报告");
-    LLOGD("==============================================================\r\n");
+    // LLOGD("==============================================================");
+    // LLOGD("                       分类汇总报告");
+    // LLOGD("==============================================================\r\n");
     // 分类报告
 
     // 文件信息表格
@@ -466,84 +427,18 @@ int luadb_do_report(luat_luadb2_ctx_t *ctx) {
         // 统计全部文件的大小
         file_total_len += cfs[i].fileSize;
     }
-    LLOGD("| %-30s | %6d | %s |", "total", file_total_len, "总计");
-    LLOGD("| %-30s | %6d | %s |", "max", file_max_len, "最大");
-    LLOGD("| %-30s | %6d | %s |", "avg", file_total_len / (ctx->fs->filecount > 0 ? ctx->fs->filecount : 1), "平均");
+    LLOGD("| %-30s | %6d | %s |", "==total==", file_total_len, "总计");
+    // LLOGD("| %-30s | %6d | %s |", "==max==", file_max_len, "最大");
+    // LLOGD("| %-30s | %6d | %s |", "==avg==", file_total_len / (ctx->fs->filecount > 0 ? ctx->fs->filecount : 1), "平均");
     LLOGD("==============================================================\r\n");
 
-    // 字符串表格
-    LLOGD("==============================================================");
-    LLOGD("                        字符串统计");
-    LLOGD("==============================================================\r\n");
-    LLOGD("| 文件名                         | 非空   |   全部 | 最大长度 | 平均长度 | 总长度  | 去重数量  | 占比   |");
-    LLOGD("|--------------------------------|--------|--------|----------|----------|---------|-----------|--------|");
-    for (size_t i = 0; i < ctx->fs->filecount; i++) {
-        if (cfs[i].report) {
-            LLOGD("| %-30s | %6d | %6d | %8d | %8d | %7d | %9d | %5d%% |", cfs[i].source_file, cfs[i].report->str_count - cfs[i].report->str_emtrys, cfs[i].report->str_count, cfs[i].report->str_max, cfs[i].report->str_total / (cfs[i].report->str_count > 0 ? cfs[i].report->str_count : 1), cfs[i].report->str_total, cfs[i].report->str_hits, cfs[i].report->str_hits * 100 / (cfs[i].report->str_count > 0 ? cfs[i].report->str_count : 1));
-            // 统计全局最长的字符串
-            if(cfs[i].report->str_max > report->str_max) {
-                report->str_max = cfs[i].report->str_max;
-            }
-            // 统计全部字符串的数量
-            // report->str_count += cfs[i].report->str_count;
-            // 统计全部字符串的长度
-            report->str_total += cfs[i].report->str_total;
-            for (size_t j = 0; j < cfs[i].report->str_count; j++)
-            {
-              report->strs[report->str_count] = cfs[i].report->strs[j];
-              report->str_count++;
-            }
-            // LLOGD("report->str_count %d", report->str_count);
-        }
-    }
-    // 找出全部字符串中不重复的字符串
-    for (size_t i = 0; i < report->str_count; i++)
-    {
-        if (report->strs[i].len == 0 || report->strs[i].len == 1) {
-          report->str_emtrys ++;
-          continue;
-        }
-        report->str_hits ++;
-        int hit = 0;
-        for (size_t j = 0; j < i; j++)
-        {
-          if(report->strs[i].len == report->strs[j].len && memcmp(report->strs[i].data, report->strs[j].data, report->strs[i].len) == 0) {
-              // 重复的字符串
-              report->str_hits --;
-              hit = 1;
-              break;
-          }
-        }
-        if (hit == 0) {
-          // 未重复的字符串
-          // LLOGD("不重复的字符串 %s", report->strs[i].data);
-        }
-    }
-    // 汇总
-    LLOGD("| %-30s | %6d | %6d | %8d | %8d | %7d | %9d | %5d%% |", "total", report->str_count - report->str_emtrys, report->str_count, report->str_max, report->str_total / (report->str_count > 0 ? report->str_count : 1), report->str_total, report->str_hits, report->str_hits * 100 / (report->str_count > 0 ? report->str_count : 1));
-    LLOGD("=============================================================\r\n");
+    luac_data_report_print_group(cfs, ctx->fs->filecount, report, 0, "字符串/二进制数据统计");
+    // luac_data_report_print_group(cfs, ctx->fs->filecount, report, 1, "函数信息统计");
+    luac_data_report_print_group(cfs, ctx->fs->filecount, report, 2, "函数代码统计");
+    luac_data_report_print_group(cfs, ctx->fs->filecount, report, 3, "常量数值统计");
+    // luac_data_report_print_group(cfs, ctx->fs->filecount, report, 4, "upvalue统计");
+    // luac_data_report_print_group(cfs, ctx->fs->filecount, report, 5, "代码行数映射信息统计");
 
-    // 函数统计
-    LLOGD("==============================================================");
-    LLOGD("                    函数统计");
-    LLOGD("==============================================================\r\n");
-    LLOGD("| 文件名                         | 数量   | 平均长度 | 总长度  |");
-    LLOGD("|--------------------------------|--------|----------|---------|");
-    for (size_t i = 0; i < ctx->fs->filecount; i++) {
-        if (cfs[i].report) {
-            LLOGD("| %-30s | %6d | %8d | %7d |", cfs[i].source_file, cfs[i].report->code_count, cfs[i].report->code_total / (cfs[i].report->code_count > 0 ? cfs[i].report->code_count : 1), cfs[i].report->code_total);
-            // 统计全局最长的函数
-            if(cfs[i].report->code_max > report->code_max) {
-                report->code_max = cfs[i].report->code_max;
-            }
-            // 统计全部函数的数量
-            report->code_count += cfs[i].report->code_count;
-            // 统计全部函数的长度
-            report->code_total += cfs[i].report->code_total;
-        }
-    }
-    // 汇总
-    LLOGD("| %-30s | %6d | %8d | %7d |", "total", report->code_count, report->code_total / (report->code_count > 0 ? report->code_count : 1), report->code_total);
-    
+
     return 0;
 }
