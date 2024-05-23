@@ -42,13 +42,14 @@ typedef struct luf_func {
   size_t sizeupvalues2;  /* size of 'upvalues'的名称信息 */
   luac_data_t **k; // 常量表
   luac_data_t *code; // 指令
-  struct luf_func **p;  /* functions defined inside the function */
   // int *lineinfo;  /* map from opcodes to source lines (debug information) */
   luac_data_t *lineinfo;  /* map from opcodes to source lines (debug information) */
   int *locvars;  /* 本地变量名称的数据1-起始/结束PC值 */
   luac_data_t **locvars2;  /* 本地变量名称的数据2-名称 */
   lu_byte *upvalues;  /* upvalue的stack信息 */
   luac_data_t **upvalues2;  /* upvalue的名称信息 */
+  luac_data_t *source;  /* debug information */
+  struct luf_func *p[1024];  /* functions defined inside the function */
 }luf_func_t;
 
 typedef struct luac_report {
@@ -74,6 +75,7 @@ typedef struct luac_file {
 
 typedef struct TIO {
     const char* ptr;
+    const char* begin;
 }tio_t;
 
 
