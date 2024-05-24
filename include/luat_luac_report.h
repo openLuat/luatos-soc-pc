@@ -2,7 +2,7 @@
 #define LUAT_LUAC_REPORT_T
 
 typedef struct luac_data {
-    size_t i; // 文件索引
+    size_t id; // 文件索引
     union 
     {
       char* data;
@@ -28,6 +28,7 @@ typedef struct luac_data_group {
 
 // 实现一个与Lua原始function平替的结构体, 用于存储函数信息
 typedef struct luf_func {
+  size_t id;
   lu_byte numparams;  /* number of fixed parameters */
   lu_byte is_vararg;
   lu_byte maxstacksize;  /* number of registers needed by this function */
@@ -74,7 +75,7 @@ typedef struct luac_file {
 }luac_file_t;
 
 typedef struct TIO {
-    const char* ptr;
+    char* ptr;
     const char* begin;
 }tio_t;
 

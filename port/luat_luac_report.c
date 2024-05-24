@@ -14,7 +14,7 @@
 static luf_func_t * LoadFunction(luac_file_t *cf, tio_t* tio, size_t id);
 
 static void LoadBlock (tio_t* t, void *b, size_t size) {
-  memcpy(b, t->ptr, size);
+  memcpy((char*)b, t->ptr, size);
   t->ptr += size;
 }
 
@@ -127,7 +127,7 @@ static void LoadConstants (tio_t *tio, luac_file_t* cf, luf_func_t *f) {
     case LUA_TLNGSTR:
       rpt->strs.data[rpt->strs.count].data = LoadString(tio, &len);
       rpt->strs.data[rpt->strs.count].len = len;
-      rpt->strs.data[rpt->strs.count].type = LUA_TLNGSTR;
+      rpt->strs.data[rpt->strs.count].type = t;
       f->k[i] = &rpt->strs.data[rpt->strs.count];
       rpt->strs.count ++;
       break;
@@ -150,20 +150,12 @@ static void LoadUpvalues (tio_t *tio, luac_file_t* cf, luf_func_t *f) {
   }
   f->upvalues = luat_heap_malloc(n * sizeof(lu_byte) * 2);
   LoadBlock(tio, f->upvalues, n * sizeof(lu_byte) * 2);
-//   LLOGD("upvalue数量 %d", n);
-  // for (i = 0; i < n; i++) {
-  //   // f->upvalues[i].instack = LoadByte(S);
-  //   // f->upvalues[i].idx = LoadByte(S);
-  //   f->upvalues[i*2] = LoadByte(tio);
-  //   f->upvalues[i*2 + 1] = LoadByte(tio);
-  // }
 }
 
 static void LoadProtos (tio_t *tio, luac_file_t *cf, luf_func_t *f) {
   int i;
   int n = LoadInt(tio);
   f->sizep = n;
-//   LLOGD("子函数数量 %d", n);
   for (i = 0; i < n; i++) {
     f->p[i] = LoadFunction(cf, tio, cf->report->func_count);
   }
@@ -201,6 +193,7 @@ static void LoadDebug (tio_t *tio, luac_file_t *cf, luf_func_t *f) {
     // 变量名称
     rpt->strs.data[rpt->strs.count].data = LoadString(tio, &len);
     rpt->strs.data[rpt->strs.count].len = len;
+    rpt->strs.data[rpt->strs.count].type = len <= 41 ? LUA_TSTRING : LUA_TLNGSTR;
     f->locvars2[i] = &rpt->strs.data[rpt->strs.count];
     rpt->strs.count ++;
     f->locvars[i*2] = LoadInt(tio);
@@ -215,6 +208,7 @@ static void LoadDebug (tio_t *tio, luac_file_t *cf, luf_func_t *f) {
   for (i = 0; i < n; i++) {
     rpt->strs.data[rpt->strs.count].data = LoadString(tio, &len);
     rpt->strs.data[rpt->strs.count].len = len;
+    rpt->strs.data[rpt->strs.count].type = len <= 41 ? LUA_TSTRING : LUA_TLNGSTR;
     f->upvalues2[i] = &rpt->strs.data[rpt->strs.count];
     rpt->strs.count ++;
     // LLOGD("debug信息: upvalue变量名长度 %d", len);
@@ -234,7 +228,7 @@ static luf_func_t * LoadFunction(luac_file_t *cf, tio_t* tio, size_t id) {
     // char* tmp = NULL;
     rpt->strs.data[rpt->strs.count].data = LoadString(tio, &len);
     rpt->strs.data[rpt->strs.count].len = len;
-    rpt->strs.data[rpt->strs.count].type = LUA_TSTRING;
+    rpt->strs.data[rpt->strs.count].type = len <= 41 ? LUA_TSTRING : LUA_TLNGSTR;
     f->source = &rpt->strs.data[rpt->strs.count];
     rpt->strs.count++;
     // f->source = LoadString(S, f);
@@ -249,8 +243,8 @@ static luf_func_t * LoadFunction(luac_file_t *cf, tio_t* tio, size_t id) {
     rpt->codes.data[rpt->codes.count].data = LoadCode(tio, &len);
     rpt->codes.data[rpt->codes.count].len = len;
     f->code = &rpt->codes.data[rpt->codes.count];
-    f->sizecode = len;
-    // LLOGD("函数[%d]代码大小 %d", id, len / 4);
+    f->sizecode = len / 4;
+    // LLOGD("函数[%d]代码大小 %d", id, len);
     rpt->codes.count ++;
     // cf->g_report->func_count ++;
 
@@ -260,29 +254,12 @@ static luf_func_t * LoadFunction(luac_file_t *cf, tio_t* tio, size_t id) {
     // LLOGD("啥情况");
     LoadDebug(tio, cf, f);
     // LLOGD("啥情况2");
-
-    if (f->sizep) {
-      // LLOGD("存在子函数 %d", f->sizep);
-      // f->p = luat_heap_malloc(sizeof(void*) * f->sizep);
-      // memset(f->p, 0, sizeof(void*) * f->sizep);
-      // LLOGD("函数信息 id=%d %p", id, &cf->report->luf_funcs[id]);
-      // LLOGD("函数信息 id=%d %p", id+1, &cf->report->luf_funcs[id+1]);
-      for (size_t i = 0; i < f->sizep; i++)
-      {
-        // LLOGD("设置函数引用 %d %p %p %p %p", i, f, f->p[i], &cf->report->luf_funcs[id], &cf->report->luf_funcs[id + i]);
-        // f->p[i] = &cf->report->luf_funcs[id + i + 1];
-        // LLOGD("子函数关联 %-2d -> %-2d", id + i + 1, id);
-      }
-    }
-    else {
-      // LLOGD("没有子函数了");
-    }
   // LLOGD("===================<<<< %d", id);
     return f;
 }
 
 int luadb_do_report_file(luac_file_t *cf, const char* data) {
-    LLOGD("分析文件%s %p", cf->source_file, data);
+    // LLOGD("分析文件%s %p", cf->source_file, data);
     // char tmpbuff[8] = {0};
     const char* ptr = data;
     // 首先, 分析头部
@@ -329,7 +306,7 @@ int luadb_do_report_file(luac_file_t *cf, const char* data) {
     ptr ++;
 
     
-    tio_t tio = {.ptr = ptr};
+    tio_t tio = {.ptr = ptr, .begin = ptr};
     LoadFunction(cf, &tio, 0);
 
     // LLOGD("分析完成");
@@ -448,15 +425,6 @@ int luadb_do_report(luat_luadb2_ctx_t *ctx) {
             cfs[i].report = &rpts[i];
             cfs[i].ptr = ctx->fs->files[i].ptr;
             luadb_do_report_file(&cfs[i], ctx->fs->files[i].ptr);
-            
-            // 函数数据检查
-            for (size_t i = 0; i < 1024; i++)
-            {
-              // if (cfs[i].report->luf_funcs[i].sizek){
-                // LLOGD("函数数据 %d 存在, 指针位置: 0x%p", i, &cfs[i].report->luf_funcs[i] );
-              // }
-            }
-            
         }
         else {
             LLOGD("跳过非lua文件 %s", ctx->fs->files[i].name);
@@ -486,16 +454,16 @@ int luadb_do_report(luat_luadb2_ctx_t *ctx) {
     for (size_t i = 0; i < ctx->fs->filecount; i++)
     {
         if (cfs[i].report) {
-            luat_luf_toluac(&cfs[i]);
+            // luat_luf_toluac(&cfs[i]);
         }
     }
-
+    luac_to_luf(&cfs[0], ctx->fs->filecount, report);
 
     // LLOGD("==============================================================");
     // LLOGD("                       分类汇总报告");
     // LLOGD("==============================================================\r\n");
     // 分类报告
-
+#if 0
     // 文件信息表格
     size_t file_max_len = 0;
     size_t file_total_len = 0;
@@ -523,22 +491,22 @@ int luadb_do_report(luat_luadb2_ctx_t *ctx) {
     // LLOGD("| %-30s | %6d | %s |", "==avg==", file_total_len / (ctx->fs->filecount > 0 ? ctx->fs->filecount : 1), "平均");
     LLOGD("==============================================================\r\n");
 
-    // luac_data_report_print_group(cfs, ctx->fs->filecount, report, 0, "字符串/二进制数据统计");
-    // luac_data_report_print_group(cfs, ctx->fs->filecount, report, 1, "函数代码统计");
+    luac_data_report_print_group(cfs, ctx->fs->filecount, report, 0, "字符串/二进制数据统计");
+    luac_data_report_print_group(cfs, ctx->fs->filecount, report, 1, "函数代码统计");
     // luac_data_report_print_group(cfs, ctx->fs->filecount, report, 2, "常量数值统计");
     // luac_data_report_print_group(cfs, ctx->fs->filecount, report, 3, "upvalue统计");
     // luac_data_report_print_group(cfs, ctx->fs->filecount, report, 4, "代码行数映射信息统计");
 
     // 打印一下函数对象
-    size_t func_count = 0;
-    for (size_t i = 0; i < 1024; i++)
-    {
-      if (report->luf_funcs[i].sizecode > 0) {
-        func_count ++;
-      }
-    }
+    // size_t func_count = 0;
+    // for (size_t i = 0; i < 1024; i++)
+    // {
+    //   if (report->luf_funcs[i].sizecode > 0) {
+    //     func_count ++;
+    //   }
+    // }
     // LLOGD("函数实例的总数 %d %d", func_count, report->func_count);
-    
-
+#endif
+    LLOGD("ALL Done");
     return 0;
 }

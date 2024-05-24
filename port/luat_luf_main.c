@@ -11,12 +11,12 @@
 #include "luat_log.h"
 
 static void DumpByte(tio_t *io, lu_byte c) {
-    memcpy(io->ptr, &c, 1);
+    memcpy(io->ptr, (char*)&c, 1);
     io->ptr += 1;
 }
 
 static void DumpBlock(tio_t *io, void *b, size_t size) {
-    memcpy(io->ptr, b, size);
+    memcpy(io->ptr, (char*)b, size);
     io->ptr += size;
 }
 
@@ -232,7 +232,7 @@ void luat_luf_toluac(luac_file_t *cf) {
         }
     }
     
-    LLOGD("当前差距[%s] %08X %08X %08X", cf->source_file, diff, (int)(tio.ptr - buff), cf->fileSize);
+    // LLOGD("当前差距[%s] %08X %08X %08X", cf->source_file, diff, (int)(tio.ptr - buff), cf->fileSize);
     if (diff > 0)
     {
         LLOGD("luac/luf不一致");
@@ -259,7 +259,7 @@ void luat_luf_toluac(luac_file_t *cf) {
         }
     }
     else {
-        LLOGD("luac/luf一致");
+        // LLOGD("luac/luf一致");
     }
 
     // 完成输出
