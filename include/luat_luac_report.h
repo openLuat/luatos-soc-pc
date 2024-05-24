@@ -13,6 +13,7 @@ typedef struct luac_data {
     size_t len;
     lu_byte mark;
     lu_byte type;
+    unsigned int hash;
 }luac_data_t;
 
 typedef struct luac_data_group {

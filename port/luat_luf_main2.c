@@ -6,6 +6,8 @@
 #include "lundump.h"
 #include "luat_luf.h"
 
+#include "lstring.h"
+
 #include "stdio.h"
 #include "stdlib.h"
 
@@ -202,6 +204,19 @@ void luac_to_luf(luac_file_t *cfs, size_t count, luac_report_t *rpt) {
     memset(floats, 0, sizeof(luac_data_group_t));
     add2pool(floats, &rpt->numbers, rpt->numbers.count, LUA_TNUMFLT);
     LLOGD("浮点数池:   %10d", floats->count);
+
+    
+    // 为所有字符串计算hash值
+    for (size_t i = 0; i < shrstrs->count; i++)
+    {
+        if (shrstrs->data[i].len > 1)
+            shrstrs->data[i].hash = luaS_hash(shrstrs->data[i].data, shrstrs->data[i].len - 1, G_SEED_FIXED);
+    }
+    for (size_t i = 0; i < lngstrs->count; i++)
+    {
+        if (lngstrs->data[i].len > 1)
+            lngstrs->data[i].hash = luaS_hash(lngstrs->data[i].data, lngstrs->data[i].len - 1, G_SEED_FIXED);
+    }
 
     // 对上述的pool进行排序, 以便查找
     qsort(&shrstrs->data[0], shrstrs->count, sizeof(luac_data_t), luac_data_cmp);
