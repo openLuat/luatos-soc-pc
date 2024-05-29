@@ -11,14 +11,26 @@ local gps_uart_id = 35
 
 sys.taskInit(function()
     air530z.setup({
-        uart_id = gps_uart_id,
-        debug = true,
-        -- rmc_only = true,
-        -- nmea_ver = 40,
-        -- no_nmea = true
+        uart_id = gps_uart_id, -- GNSS芯片所接的UART ID, 默认是2
+        debug = true,          -- 是否开启调试信息, 默认是false
+        sys = 7,               -- 指定定位系统, 1:GPS, 2:BDS, 4:GLO, 可任意相加, 默认是 3:GPS+BDS, 单北斗填2
+        -- rmc_only = true,    -- 仅输出RMC信息,调试用
+        -- nmea_ver = 40,      -- 设置NMEA协议版本,默认4.1
+        -- no_nmea = true,     -- 关闭NMEA输出,调试用
     })
     air530z.start()
-    -- air530z.agps()
+    air530z.agps()
+end)
+
+sys.taskInit(function()
+    while 1 do
+        sys.wait(600 * 1000)
+        if not libgnss.isFix() then
+            air530z.agps()
+        else
+            air530z.saveloc()
+        end
+    end
 end)
 
 local function reboot_wait(mode, tag, timeout)
@@ -47,7 +59,7 @@ sys.taskInit(function()
         -- log.info("air530z", "测试冷重启一次,并等待600秒")
         -- reboot_wait(2, "冷重启", 600000)
 
-        -- 下面的测试一般没必要
+        -- 测试彻底清空数据, 恢复出厂状态
         -- log.info("air530z", "测试出厂重启一次,并等待240秒")
         -- air530z.reboot(3)
         -- sys.wait(100)

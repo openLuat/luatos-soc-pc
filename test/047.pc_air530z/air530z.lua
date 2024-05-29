@@ -13,7 +13,8 @@ end
 function air530z.start()
     -- 初始化串口
     local gps_uart_id = air530z.opts.uart_id or 2
-
+    local opts = air530z.opts
+    local write = air530z.writeCmd
     -- 切换波特率
     uart.setup(gps_uart_id, 9600)
     uart.write(gps_uart_id,"$PCAS01,5*19\r\n")
@@ -22,61 +23,56 @@ function air530z.start()
     sys.wait(100)
     uart.setup(gps_uart_id, 115200)
     -- 是否为调试模式
-    if air530z.opts.debug then
+    if opts.debug then
         libgnss.debug(true)
     end
     libgnss.bind(gps_uart_id)
+    libgnss.on("txt", function(txt)
+        -- log.info("air530z", "收到TXT数据", txt)
+        if txt:startsWith("$GPTXT,01,01,02,MS=") then
+            local tmp = txt:split(",")
+            log.info("air530z", "GPS有效星历", tmp[8], "BDS有效星历", tmp[11])
+            air530z.xl_gps = tonumber(tmp[8])
+            air530z.xl_bds = tonumber(tmp[11])
+            air530z.xl_tm = os.time()
+        elseif txt:startsWith("$GPTXT,01,01,01,ANTENNA") then
+            -- 天线状态
+            air530z.antenna = txt:split(" ")[2]
+            if air530z.antenna then
+                air530z.antenna = air530z.antenna:split("*")[1]
+            end
+            -- log.info("air530z", "天线状态", air530z.antenna)
+        end
+    end)
 
     -- 配置NMEA版本, 4.1的GSA有额外的标识
-    if not air530z.opts.nmea_ver or air530z.opts.nmea_ver >= 41 then
-        air530z.writeCmd("PCAS05,2")
+    if not opts.nmea_ver or opts.nmea_ver >= 41 then
+        write("PCAS05,2")
     else
-        air530z.writeCmd("PCAS05,5")
+        write("PCAS05,5")
     end
     -- 打开全部NMEA语句
-    if air530z.opts.rmc_only then
-        air530z.writeCmd("PCAS03,0,0,0,0,1,0,0,0,0,0,,,0,0,,,,0")
-        air530z.writeCmd("PCAS03,,,,,,,,,,,0")
+    if opts.rmc_only then
+        write("PCAS03,0,0,0,0,1,0,0,0,0,0,,,0,0,,,,0")
+        write("PCAS03,,,,,,,,,,,0")
     elseif air530z.opts.no_nmea then
-        air530z.writeCmd("PCAS03,0,0,0,0,0,0,0,0,0,0,,,0,0,,,,0")
-        air530z.writeCmd("PCAS03,,,,,,,,,,,0")
+        write("PCAS03,0,0,0,0,0,0,0,0,0,0,,,0,0,,,,0")
+        write("PCAS03,,,,,,,,,,,0")
     else
-        air530z.writeCmd("PCAS03,1,1,1,1,1,1,1,1,0,0,,,0,0,,,,1")
-        air530z.writeCmd("PCAS03,,,,,,,,,,,1")
+        write("PCAS03,1,1,1,1,1,1,1,0,0,0,,,0,0,,,,0")
+        write("PCAS03,,,,,,,,,,,1")
     end
-    -- 打开GPS+BD定位
-    air530z.writeCmd("PCAS04,7")
-    air530z.writeCmd("PCAS15,4,FFFF")
-    air530z.writeCmd("PCAS15,5,1F")
-    -- TODO打开星历信息语句
-    sys.wait(20)
-
-    -- air530z.writeCASIC(0x05, 0x01, string.char(0x0))
-    air530z.writeQuery(0x06, 0x01)
-    -- air530z.writeACK(0x06, 0x01)
-
-    air530z.writeCASIC(0x06, 0x01, string.char(0x01, 0x00, 0x00, 0x00))
-    sys.wait(10)
-    air530z.writeCASIC(0x06, 0x01, string.char(0x01, 0x01, 0x00, 0x00))
-    sys.wait(10)
-    air530z.writeCASIC(0x06, 0x01, string.char(0x01, 0x02, 0x00, 0x00))
-    sys.wait(10)
-    air530z.writeCASIC(0x06, 0x01, string.char(0x01, 0x03, 0x00, 0x00))
-    sys.wait(10)
-
-    air530z.writeCASIC(0x06, 0x01, string.char(0x01, 0x10, 0x00, 0x00))
-    sys.wait(10)
-
-    air530z.writeCASIC(0x06, 0x01, string.char(0x01, 0x20, 0x00, 0x00))
-    sys.wait(10)
-    air530z.writeCASIC(0x06, 0x01, string.char(0x01, 0x21, 0x00, 0x00))
-    sys.wait(10)
-
-    air530z.writeCASIC(0x06, 0x01, string.char(0x03, 0x10, 0x00, 0x00))
-    sys.wait(10)
-    air530z.writeCASIC(0x06, 0x01, string.char(0x03, 0x11, 0x00, 0x00))
-    sys.wait(10)
-    -- 结束
+    -- 是否需要切换定位系统呢?
+    if opts.sys then
+        if type(opts.sys) == "number" then
+            air530z.writeCmd("PCAS04," .. tostring(opts.sys))
+            if opts.sys == 1 then -- 单GPS模式
+                -- 额外打开SBAS和QZSS
+                write("PCAS15,4,FFFF")
+                write("PCAS15,5,1F")
+            end
+        end
+    end
 end
 
 function air530z.writeCmd(cmd, full)
@@ -88,42 +84,13 @@ function air530z.writeCmd(cmd, full)
     uart.write(air530z.opts.uart_id, cmd)
 end
 
-function air530z.writeCASIC(class, id, data)
-    local tmp = string.pack("<Hbb", #data, class, id) .. data
-    local ckSum = (id << 24) + (class << 16) + #data
-    if #data > 0 then
-        for i = 1, #data, 4 do
-            local stmp = data:sub(i, i + 3)
-            log.info("stmp", stmp:toHex(), i, i + 3)
-            ckSum = ckSum + string.unpack("<I", stmp)
-        end
-    end
-    log.info("air530z", "checksum", string.format("%08X", ckSum))
-    local cmd = "\xBA\xCE" .. tmp .. string.pack("<I", ckSum)
-    log.info("air530z", "写入CASIC指令", class, id, (data:toHex()), (cmd:toHex()))
-    uart.write(air530z.opts.uart_id, cmd)
-end
-
-function air530z.writeACK(class, id)
-    air530z.writeCASIC(0x05, 0x01, string.char(class, id, 0, 0))
-end
-
-function air530z.writeNCK(class, id)
-    air530z.writeCASIC(0x05, 0x00, string.char(class, id, 0, 0))
-end
-
-
-function air530z.writeQuery(class, id)
-    air530z.writeCASIC(class, id, "")
-end
-
 function air530z.reboot(mode)
     local cmd = string.format("PCAS10,%d", mode or 0)
     air530z.writeCmd(cmd)
     if mode and mode == 2 then
         air530z.agps_tm = nil
-        libgnss.clear()
     end
+    libgnss.clear()
 end
 
 function air530z.stop()
@@ -136,17 +103,17 @@ local function do_agps()
     if mobile then
         mobile.reqCellInfo(6)
         sys.waitUntil("CELL_INFO_UPDATE", 6000)
-    elseif wlan then
-        wlan.scan()
-        sys.waitUntil("WLAN_SCAN_DONE", 5000)
         local lbsLoc2 = require("lbsLoc2")
         lat, lng = lbsLoc2.request(5000)
         -- local lat, lng, t = lbsLoc2.request(5000, "bs.openluat.com")
         log.info("lbsLoc2", lat, lng)
+    elseif wlan then
+        -- wlan.scan()
+        -- sys.waitUntil("WLAN_SCAN_DONE", 5000)
     end
     if not lat then
         -- 获取最后的本地位置
-        local locStr = io.readFile("/gnssloc")
+        local locStr = io.readFile("/zkwloc")
         if locStr then
             local jdata = json.decode(locStr)
             if jdata and jdata.lat then
@@ -158,10 +125,24 @@ local function do_agps()
     -- 然后, 判断星历时间和下载星历
     local now = os.time()
     local agps_time = tonumber(io.readFile("/zkw_tm") or "0") or 0
-    if now - agps_time > 7200 then
-        local code = http.request("GET", "http://download.openluat.com/9501-xingli/CASIC_data.dat", nil, nil, {dst="/ZKW.dat"}).wait()
-        -- local code = http.request("GET", "http://download.openluat.com/9501-xingli/CASIC_data_bds.dat", nil, nil, {dst="/ZKW.dat"}).wait()
-        log.info("air530z", "download agps file", code, io.fileSize("/ZKW.dat"))
+    if now - agps_time > 3600 then
+        local url = air530z.opts.url
+        if not air530z.opts.url then
+            if air530z.opts.sys and 2 == air530z.opts.sys then
+                url = "http://download.openluat.com/9501-xingli/CASIC_data_bds.dat"
+            else
+                url = "http://download.openluat.com/9501-xingli/CASIC_data.dat"
+            end
+        end
+        local code = http.request("GET", url, nil, nil, {dst="/ZKW.dat"}).wait()
+        if code and code == 200 then
+            log.info("air530z", "下载星历成功", url)
+            io.writeFile("/zkw_tm", tostring(now))
+        else
+            log.info("air530z", "下载星历失败", code)
+        end
+    else
+        log.info("air530z", "星历不需要更新", now - agps_time)
     end
 
     local gps_uart_id = air530z.opts.uart_id or 2
@@ -183,14 +164,15 @@ local function do_agps()
     -- 写入参考位置
     -- "lat":23.4068813,"min":27,"valid":true,"day":27,"lng":113.2317505
     if not lat or not lng then
-        lat, lng = 23.4068813, 113.2317505
+        -- lat, lng = 23.4068813, 113.2317505
+        return -- TODO 暂时不写入参考位置
     end
+    socket.sntp()
+    sys.waitUntil("NTP_UPDATE", 1000)
     local dt = os.date("!*t")
     local lla = {lat=lat, lng=lng}
     local aid = libgnss.casic_aid(dt, lla)
     uart.write(gps_uart_id, aid.."\r\n")
-
-    -- 写入参考时间
 
     -- 结束
     air530z.agps_tm = now
@@ -219,11 +201,11 @@ function air530z.saveloc(lat, lng)
             end
         end
     end
-    log.info("待保存的GPS位置", lat, lng)
     if lat and lng then
+        log.info("待保存的GPS位置", lat, lng)
         local locStr = string.format('{"lat":%7f,"lng":%7f}', lat, lng)
         log.info("air530z", "保存GPS位置", locStr)
-        io.writeFile("/gnssloc", locStr)
+        io.writeFile("/zkwloc", locStr)
     end
 end
 
