@@ -34,7 +34,6 @@ sys.taskInit(function()
 end)
 
 local function reboot_wait(mode, tag, timeout)
-    -- log.info("air530z", "测试热重启一次,并等待15秒")
     air530z.reboot(mode)
     local tnow = os.time()
     sys.waitUntil("GNSS_STATE", 3000)

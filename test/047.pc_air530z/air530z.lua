@@ -66,7 +66,8 @@ function air530z.start()
     if opts.sys then
         if type(opts.sys) == "number" then
             air530z.writeCmd("PCAS04," .. tostring(opts.sys))
-            if opts.sys == 1 then -- 单GPS模式
+            -- 若开启了GPS, 那么把SBAS和QZSS也打开
+            if (opts.sys & 1) == 1 then
                 -- 额外打开SBAS和QZSS
                 write("PCAS15,4,FFFF")
                 write("PCAS15,5,1F")
