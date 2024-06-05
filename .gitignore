@@ -1,3 +1,7 @@
 .xmake
 build
 .vscode
+
+# ignore clangd toolchains
+.cache
+compile_commands.json
