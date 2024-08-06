@@ -8,10 +8,10 @@ require "sysplus"
 
 sys.taskInit(function()
     sys.waitUntil("IP_READY")
-    -- local code, headers, body = http.request("GET", "https://www.air32.cn").wait()
-    -- log.info("http", code, json.encode(headers), body)
-    local code, headers, body = http.request("POST", "http://ql.betterforyou.com.cn:9090/ck/app/appUpgrade/findMiniUpgrade?equId=QL10000001&equType=1").wait()
-    log.info("http.get", code, headers, body)
+    local code, headers, body = http.request("GET", "https://httpbin.air32.cn/get").wait()
+    log.info("http", code, json.encode(headers), body)
+    -- local code, headers, body = http.request("POST", "http://ql.betterforyou.com.cn:9090/ck/app/appUpgrade/findMiniUpgrade?equId=QL10000001&equType=1").wait()
+    -- log.info("http.get", code, headers, body)
 
     log.info("GoGoGo")
     sys.wait(1000)
