@@ -89,7 +89,6 @@
 // #define LUAT_USE_MAX30102 1
 // #define LUAT_USE_MLX90640 1
 #define LUAT_USE_YMODEM 1
-#define LUAT_USE_ERCOAP 1
 
 #define LUAT_USE_FATFS
 #define LUAT_USE_FATFS_CHINESE 3
@@ -111,6 +110,9 @@
 #define LUAT_USE_ONEWIRE 1
 #define LUAT_USE_WS2812 1
 #define LUAT_USE_XXTEA 1
+#define LUAT_USE_PROFILER 1
+
+#define LUAT_USE_ROSTR 1
 
 //--------------------------------------------------
 // GUI相关
@@ -218,5 +220,7 @@
 #define LUAT_USE_ULWIP 1
 #define LUAT_USE_DNS 1
 #endif
+
+#define LUAT_UART_MAX_DEVICE_COUNT 128
 
 #endif
