@@ -106,13 +106,13 @@
 #define LUAT_USE_ICONV 1
 #define LUAT_USE_BIT64 1
 #define LUAT_USE_FASTLZ 1
-#define LUAT_USE_SQLITE3 1
-#define LUAT_USE_ONEWIRE 1
-#define LUAT_USE_WS2812 1
-#define LUAT_USE_XXTEA 1
+// #define LUAT_USE_SQLITE3 1
+// #define LUAT_USE_ONEWIRE 1
+// #define LUAT_USE_WS2812 1
+// #define LUAT_USE_XXTEA 1
 #define LUAT_USE_PROFILER 1
 
-#define LUAT_USE_ROSTR 1
+// #define LUAT_USE_ROSTR 1
 
 //--------------------------------------------------
 // GUI相关
@@ -217,7 +217,7 @@
 // 注意这里是 LUAT_USE_WINDOWS
 #ifdef _WIN32
 #define LUAT_USE_LWIP 1
-#define LUAT_USE_ULWIP 1
+// #define LUAT_USE_ULWIP 1
 #define LUAT_USE_DNS 1
 #endif
 
