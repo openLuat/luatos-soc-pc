@@ -15,6 +15,7 @@
 #include "luat_log.h"
 
 #include "uv.h"
+#include "luat_mem.h"
 
 #ifdef LUAT_USE_LVGL
 uv_timer_t lvgl_timer;
@@ -28,6 +29,7 @@ int cmdline_argc;
 char** cmdline_argv;
 // uv_timespec64_t boot_ts;
 extern uint64_t uv_startup_ns;
+extern void luat_lwip_init(void);
 
 int lua_main (int argc, char** argv);
 
@@ -76,6 +78,7 @@ int main(int argc, char** argv) {
 
     luat_log_init_win32();
     bpool(luavm_heap, LUAT_HEAP_SIZE);
+    luat_heap_opt_init(LUAT_HEAP_PSRAM);
     
     #ifdef LUAT_USE_LVGL
     lv_init();
@@ -95,7 +98,6 @@ int main(int argc, char** argv) {
     #endif
 
     #ifdef LUAT_USE_LWIP
-    extern void luat_lwip_init(void);
     //LLOGD("初始化lwip");
     luat_lwip_init();
     #endif

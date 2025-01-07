@@ -97,20 +97,37 @@ void luat_meminfo_sys(size_t *total, size_t *used, size_t *max_used) {
 }
 
 #include "luat_mem.h"
+#include "luat_bget.h"
+
+static void* psram_ptr;
+static luat_bget_t psram_bget;
 
 void luat_heap_opt_init(LUAT_HEAP_TYPE_E type){
-    //luat_heap_init();
+    if (type == LUAT_HEAP_PSRAM && psram_ptr == NULL) {
+        psram_ptr = malloc(2*1024*1024);
+        luat_bget_init(&psram_bget);
+        luat_bpool(&psram_bget, psram_ptr, 2*1024*1024);
+    }
 }
 
 void* luat_heap_opt_malloc(LUAT_HEAP_TYPE_E type,size_t len){
+    if (type == LUAT_HEAP_PSRAM) {
+        return luat_bgetz(&psram_bget, len);
+    }
     return luat_heap_malloc(len);
 }
 
 void luat_heap_opt_free(LUAT_HEAP_TYPE_E type,void* ptr){
+    if (type == LUAT_HEAP_PSRAM) {
+        return luat_brel(&psram_bget, ptr);
+    }
     luat_heap_free(ptr);
 }
 
 void* luat_heap_opt_realloc(LUAT_HEAP_TYPE_E type,void* ptr, size_t len){
+    if (type == LUAT_HEAP_PSRAM) {
+        return luat_bgetr(&psram_bget, ptr, len);
+    }
     return luat_heap_realloc(ptr, len);
 }
 
@@ -127,7 +144,17 @@ void* luat_heap_opt_zalloc(LUAT_HEAP_TYPE_E type,size_t size){
 }
 
 void luat_meminfo_opt_sys(LUAT_HEAP_TYPE_E type,size_t* total, size_t* used, size_t* max_used){
-    luat_meminfo_sys(total, used, max_used);
+    if (type == LUAT_HEAP_PSRAM) {
+        long curalloc, totfree, maxfree;
+	    unsigned long nget, nrel;
+	    luat_bstats(&psram_bget, &curalloc, &totfree, &maxfree, &nget, &nrel);
+	    *used = curalloc;
+	    *max_used = luat_bstatsmaxget(&psram_bget);
+        *total = curalloc + totfree;
+    }
+    else {
+        luat_meminfo_sys(total, used, max_used);
+    }
 }
 
 
