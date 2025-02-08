@@ -908,7 +908,7 @@ static void on_resolved(uv_getaddrinfo_t *resolver, int status, struct addrinfo 
     // LLOGD("dns result %d %p", status, query);
     if (status < 0)
     {
-        LLOGD("dns query failed");
+        LLOGI("dns query failed %s", query->domain);
         cb_to_nw_task(EV_NW_DNS_RESULT, 0, 0, query->param);
         luat_heap_free(query);
         return;
