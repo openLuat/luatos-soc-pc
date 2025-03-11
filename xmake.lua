@@ -227,8 +227,8 @@ target("luatos-lua")
 
     -- onewire
     add_includedirs(luatos.."components/onewire/include",{public = true})
-    add_files(luatos.."components/onewire/src/*.c")
-    add_files(luatos.."components/onewire/binding/*.c")
+    -- add_files(luatos.."components/onewire/src/*.c")
+    -- add_files(luatos.."components/onewire/binding/*.c")
 
     
     -- xxtea
@@ -239,6 +239,10 @@ target("luatos-lua")
     -- fatfs
     add_includedirs(luatos.."components/fatfs")
     add_files(luatos.."components/fatfs/**.c")
+
+    -- rostr
+    add_includedirs(luatos.."components/rostr")
+    add_files(luatos.."components/rostr/**.c")
 
     if is_host("windows") then
         -- lwip & zlink

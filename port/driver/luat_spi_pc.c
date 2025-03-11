@@ -80,5 +80,17 @@ int luat_spi_change_speed(int spi_id, uint32_t speed){
     return 0;
 }
 
+#include "luat_lcd.h"
+
+int luat_lcd_qspi_config(luat_lcd_conf_t* conf, luat_lcd_qspi_conf_t *qspi_config) {
+    return -1;
+};
+
+int luat_lcd_qspi_auto_flush_on_off(luat_lcd_conf_t* conf, uint8_t on_off) {
+    return -1;
+}
+int luat_lcd_run_api_in_service(luat_lcd_api api, void *param, uint32_t param_len) {
+    return -1;
+};
 
 
