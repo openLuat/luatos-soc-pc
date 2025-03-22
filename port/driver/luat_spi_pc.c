@@ -80,6 +80,7 @@ int luat_spi_change_speed(int spi_id, uint32_t speed){
     return 0;
 }
 
+#ifdef LUAT_USE_LCD
 #include "luat_lcd.h"
 
 int luat_lcd_qspi_config(luat_lcd_conf_t* conf, luat_lcd_qspi_conf_t *qspi_config) {
@@ -94,3 +95,4 @@ int luat_lcd_run_api_in_service(luat_lcd_api api, void *param, uint32_t param_le
 };
 
 
+#endif
