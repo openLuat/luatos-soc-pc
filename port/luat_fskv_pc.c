@@ -132,7 +132,7 @@ int luat_fskv_set(const char *key, void *data, size_t len)
         return -1;
     }
     ret = lfs_file_write(&fskv_lfs, &fd, data, len);
-    lfs_file_close(&fskv_lfs, &fd);
+    ret |= lfs_file_close(&fskv_lfs, &fd);
     return ret;
 }
 
