@@ -96,3 +96,13 @@ int luat_lcd_run_api_in_service(luat_lcd_api api, void *param, uint32_t param_le
 
 
 #endif
+
+int luat_spi_lock(int spi_id)
+{
+    return -1;
+}
+
+int luat_spi_unlock(int spi_id)
+{
+	return -1;
+}
