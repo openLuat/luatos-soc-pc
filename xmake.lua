@@ -5,6 +5,7 @@ set_version("1.0.3", {build = "%Y%m%d%H%M"})
 add_rules("mode.debug", "mode.release")
 
 local luatos = "../LuatOS/"
+local luatos_exts = "../luatos-ext-components/"
 
 add_requires("libuv v1.46.0")
 add_packages("libuv")
@@ -243,6 +244,10 @@ target("luatos-lua")
     -- rostr
     add_includedirs(luatos.."components/rostr")
     add_files(luatos.."components/rostr/**.c")
+
+    -- vtool
+    add_includedirs(luatos_exts.."/vtool/include")
+    add_files(luatos_exts.."/vtool/**.c")
 
     if is_host("windows") then
         -- lwip & zlink
