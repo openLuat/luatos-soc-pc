@@ -165,6 +165,9 @@ static const luaL_Reg loadedlibs[] = {
 #ifdef LUAT_USE_PROFILER
   {"profiler", luaopen_profiler},
 #endif
+#ifdef LUAT_USE_VTOOL
+  {"vtool", luaopen_vtool},
+#endif
   {NULL, NULL}
 };
 
