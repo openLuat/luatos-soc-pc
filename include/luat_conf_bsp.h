@@ -113,6 +113,7 @@
 #define LUAT_USE_PROFILER 1
 
 // #define LUAT_USE_ROSTR 1
+// #define LUAT_USE_VTOOL 1
 
 //--------------------------------------------------
 // GUI相关

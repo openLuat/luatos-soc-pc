@@ -22,7 +22,7 @@ uv_timer_t lvgl_timer;
 #include "lvgl.h"
 #endif
 
-#define LUAT_HEAP_SIZE (1024*1024)
+#define LUAT_HEAP_SIZE (2*1024*1024)
 uint8_t luavm_heap[LUAT_HEAP_SIZE] = {0};
 
 int cmdline_argc;
