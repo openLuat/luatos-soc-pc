@@ -1,4 +1,5 @@
 # 针对PC环境的LuatOS集成
+#测试进行中
 
 * [使用说明](doc/usage.md)
 * [编译说明](doc/compile.md)
