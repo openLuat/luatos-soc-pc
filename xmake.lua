@@ -101,6 +101,7 @@ target("luatos-lua")
             ,luatos.."luat/modules/luat_lib_pwm.c"
             ,luatos.."luat/modules/luat_irq.c"
             ,luatos.."luat/modules/luat_lib_can.c"
+            ,luatos.."luat/modules/luat_lib_otp.c"
             ,luatos.."luat/modules/luat_main.c"
             )
 
@@ -178,6 +179,10 @@ target("luatos-lua")
     add_includedirs(luatos.."components/sqlite3/include",{public = true})
     add_files(luatos.."components/sqlite3/src/*.c")
     add_files(luatos.."components/sqlite3/binding/*.c")
+    
+    --mobile
+    add_includedirs(luatos.."components/mobile")
+    add_files(luatos.."components/mobile/luat_lib_mobile.c")
 
     ----------------------------------------------------------------------
     -- 网络相关
@@ -212,7 +217,7 @@ target("luatos-lua")
     -- mqtt
     add_includedirs(luatos.."components/network/libemqtt",{public = true})
     add_files(luatos.."components/network/libemqtt/*.c")
-
+    
     -- errdump
     add_includedirs(luatos.."components/network/errdump",{public = true})
     add_files(luatos.."components/network/errdump/*.c")
