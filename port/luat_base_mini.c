@@ -168,7 +168,9 @@ static const luaL_Reg loadedlibs[] = {
 #ifdef LUAT_USE_VTOOL
   {"vtool", luaopen_vtool},
 #endif
+#ifdef LUAT_USE_CAN
   {"can", luaopen_can},
+#endif
 #ifdef LUAT_USE_OTP
   {"otp", luaopen_otp},
 #endif

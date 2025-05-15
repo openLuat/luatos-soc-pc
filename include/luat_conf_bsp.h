@@ -56,6 +56,9 @@
 #define LUAT_USE_PM  1
 #define LUAT_USE_MCU  1
 #define LUAT_USE_RTC 1
+#define LUAT_USE_CAN 1
+#define LUAT_USE_OTP 1
+#define LUAT_USE_MOBILE 1
 
 #define LUAT_USE_IOTAUTH 1
 #define LUAT_USE_MINIZ 1
