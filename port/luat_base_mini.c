@@ -169,8 +169,12 @@ static const luaL_Reg loadedlibs[] = {
   {"vtool", luaopen_vtool},
 #endif
   {"can", luaopen_can},
+#ifdef LUAT_USE_OTP
   {"otp", luaopen_otp},
+#endif
+#ifdef LUAT_USE_MOBILE
   {"mobile", luaopen_mobile},
+#endif
   {NULL, NULL}
 };
 
