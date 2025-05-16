@@ -86,6 +86,7 @@ sys.taskInit(function()
     -- 等待联网
     local ret, device_id = sys.waitUntil("net_ready")
     socket.sntp()
+    -- sys.wait(1000)
     -- 下面的是mqtt的参数均可自行修改
     -- client_id = device_id
     -- pub_topic = "/qdzk/861551055246581/weight"
@@ -112,7 +113,7 @@ sys.taskInit(function()
     -------------------------------------
     -------- MQTT 演示代码 --------------
     -------------------------------------
-    socket.sslLog(3)
+    -- socket.sslLog(3)
     mqttc = mqtt.create(nil, mqtt_host, mqtt_port
     ,{
         server_cert=io.readFile("/luadb/server.crt"),

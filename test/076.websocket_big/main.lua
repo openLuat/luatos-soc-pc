@@ -9,7 +9,8 @@ _G.sys = require("sys")
 local wsc = nil
 
 sys.taskInit(function()
-    sys.wait(1000)
+    -- sys.wait(1000)
+    sys.waitUntil("IP_READY", 30000)
 
     -- 这是个测试服务, 当发送的是json,且echosize=1024,就会返回1024字节的数据
     wsc = websocket.create(nil, "ws://air32.cn:8766/")
