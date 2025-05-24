@@ -1,7 +1,7 @@
 #include "luat_base.h"
 #include "luat_sys.h"
 #include "luat_mobile.h"
-
+#include "lwip/ip_addr.h"
 
 // #define LUAT_LOG_TAG "mobile"
 
