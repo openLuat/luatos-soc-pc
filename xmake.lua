@@ -269,7 +269,11 @@ target("luatos-lua")
         add_files(luatos .. "components/network/adapter_lwip2/*.c")
         add_includedirs(luatos .. "components/network/adapter_lwip2/")
         add_files(luatos .. "components/ethernet/common/*.c")
+    else
+        add_includedirs(luatos .. "components/network/lwip/include")
+        add_includedirs("lwip/include")    
     end
+
     if os.getenv("LUAT_USE_GUI") == "y" then
         add_files("ui/*.c")
         add_defines("U8G2_USE_LARGE_FONTS=1")
