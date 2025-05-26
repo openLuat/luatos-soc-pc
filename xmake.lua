@@ -256,8 +256,8 @@ target("luatos-lua")
     add_files(luatos_exts.."/vtool/**.c")
     
     -- airui
-    add_includedirs(luatos_exts.."/air_ui/include")
-    add_files(luatos_exts.."/air_ui/**.c")
+    add_includedirs(luatos_exts.."/airui/include")
+    add_files(luatos_exts.."/airui/**.c")
 
     if is_host("windows") then
         -- lwip & zlink
