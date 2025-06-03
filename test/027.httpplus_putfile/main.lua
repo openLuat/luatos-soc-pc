@@ -9,9 +9,12 @@ httpplus = require "httpplus"
 
 sys.taskInit(function()
     sys.waitUntil("IP_READY")
-
-    local code, resp = httpplus.request({url="http://httpbin.air32.cn/put", method="PUT", bodyfile="/luadb/wifi.json"})
+    log.info("start", mcu.ticks())
+    local opts = {url="http://upload.air32.cn/api/upload/jpg", method="POST", bodyfile="/luadb/test.jpg"}
+    opts.headers = {ABC="1234"}
+    local code, resp = httpplus.request(opts)
     log.info("httpplus", code, resp.body:query())
+    log.info("done", mcu.ticks())
 end)
 
 sys.run()
