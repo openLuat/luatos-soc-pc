@@ -254,6 +254,10 @@ target("luatos-lua")
     -- vtool
     add_includedirs(luatos_exts.."/vtool/include")
     add_files(luatos_exts.."/vtool/**.c")
+    
+    -- airui
+    add_includedirs(luatos_exts.."/airui/include")
+    add_files(luatos_exts.."/airui/**.c")
 
     if is_host("windows") then
         -- lwip & zlink
@@ -269,7 +273,11 @@ target("luatos-lua")
         add_files(luatos .. "components/network/adapter_lwip2/*.c")
         add_includedirs(luatos .. "components/network/adapter_lwip2/")
         add_files(luatos .. "components/ethernet/common/*.c")
+    else
+        add_includedirs(luatos .. "components/network/lwip/include")
+        add_includedirs("lwip/include")    
     end
+
     if os.getenv("LUAT_USE_GUI") == "y" then
         add_files("ui/*.c")
         add_defines("U8G2_USE_LARGE_FONTS=1")
