@@ -59,7 +59,6 @@
 #define LUAT_USE_CAN 1
 #define LUAT_USE_OTP 1
 #define LUAT_USE_MOBILE 1
-#define LUAT_USE_AIRUI 1
 
 #define LUAT_USE_IOTAUTH 1
 #define LUAT_USE_MINIZ 1
@@ -216,6 +215,8 @@
 #define LUAT_USE_LVGL_TABVIEW   //页签 依赖页面PAGE 图片按钮IMGBTN
 #define LUAT_USE_LVGL_TILEVIEW   //平铺视图 依赖页面PAGE
 #define LUAT_USE_LVGL_WIN   //窗口 依赖容器CONT 按钮BTN 标签LABEL 图片IMG 页面PAGE
+
+#define LUAT_USE_AIRUI 1
 #endif
 
 
