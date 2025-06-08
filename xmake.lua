@@ -255,9 +255,6 @@ target("luatos-lua")
     add_includedirs(luatos_exts.."/vtool/include")
     add_files(luatos_exts.."/vtool/**.c")
     
-    -- airui
-    add_includedirs(luatos_exts.."/airui/include")
-    add_files(luatos_exts.."/airui/**.c")
 
     if is_host("windows") then
         -- lwip & zlink
@@ -311,6 +308,10 @@ target("luatos-lua")
 
         add_includedirs(luatos.."components/luatfonts")
         add_files(luatos.."components/luatfonts/**.c")
+
+        -- airui
+        add_includedirs(luatos_exts.."/airui/include")
+        add_files(luatos_exts.."/airui/**.c")
 
     end
 target_end()
