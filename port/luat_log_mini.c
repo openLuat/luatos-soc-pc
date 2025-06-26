@@ -7,6 +7,7 @@
 #include "luat_mcu.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef struct log_msg {
     char* buff;
@@ -19,7 +20,7 @@ void luat_log_init_win32(void) {
 }
 
 void luat_log_set_uart_port(int port) {
-    luat_log_uart_port = port;
+    luat_log_uart_port = (uint8_t)port;
 }
 
 void luat_print(const char* _str) {
@@ -34,7 +35,7 @@ void luat_log_write(char *s, size_t l) {
 }
 
 void luat_log_set_level(int level) {
-    luat_log_level_cur = level;
+    luat_log_level_cur = (uint8_t)level;
 }
 int luat_log_get_level() {
     return luat_log_level_cur;
@@ -45,7 +46,7 @@ void luat_log_log(int level, const char* tag, const char* _fmt, ...) {
     char buff[LOGLOG_SIZE] = {0};
     char *tmp = (char *)buff;
     uint64_t t = luat_mcu_tick64_ms();
-    uint32_t sec = t / 1000;
+    uint32_t sec = (uint32_t)(t / 1000);
     uint32_t ms = t % 1000;
     sprintf_(tmp, "[%08lu.%03lu]", sec, ms);
     tmp += strlen(tmp);
@@ -90,4 +91,16 @@ void luat_log_log(int level, const char* tag, const char* _fmt, ...) {
         buff[len] = '\n';
         luat_nprint(buff, len+1);
     }
+}
+
+void luat_debug_assert(const char *fun_name, unsigned int line_no, const char *fmt, ...) {
+    printf("ASSERT: %s:%u: ", fun_name, line_no);
+    char buff[256] = {0};
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf_(buff, sizeof(buff) - 1, fmt, args);
+    va_end(args);
+    printf("%s\n", buff);
+    // 这里不做任何处理，直接退出
+    exit(16);
 }
