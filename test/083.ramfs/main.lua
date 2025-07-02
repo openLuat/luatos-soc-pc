@@ -7,38 +7,69 @@ log.info("main", PROJECT, VERSION)
 -- require "jd9261t"
 -- require "sh8601z"
 
+function read_write_test(src, dst, rw_size)
+-- 逐段写入测试
+    local fd = io.open(src, "r")
+    local fd2 = io.open(dst, "w+")
+    while true do
+        local chunk = fd:read(rw_size)
+        if not chunk then break end
+        fd2:write(chunk)
+    end
+    fd:close()
+    fd2:close()
 
+    local data = io.readFile(src)
+    local data3 = io.readFile(dst)
+    if #data ~= #data3 then
+        log.error("文件大小不一致", #data, #data3, rw_size)
+        os.exit(1)
+    end
+    if crypto.md5(data) ~= crypto.md5(data3) then
+        log.error("md5不一致", crypto.md5(data), crypto.md5(data3), rw_size)
+        os.exit(1)
+    end
+
+    -- 还得测试分段读取
+    local fd = io.open(src, "r")
+    local fd2 = io.open(dst, "r")
+    while true do
+        local chunk = fd:read(rw_size)
+        local chunk2 = fd2:read(rw_size)
+        if not chunk and not chunk2 then break end
+        if chunk ~= chunk2 then
+            log.error("分段读取不一致", #chunk, #chunk2, rw_size)
+            os.exit(1)
+        end
+    end
+    fd:close()
+    fd2:close()
+end
 
 sys.taskInit(function()
-    local data = io.readFile("/luadb/test_qspi.jpg")
-    log.info("文件大小(luadb)", #data)
-    io.writeFile("/ram/test_qspi.jpg", data)
-    local data2 = io.readFile("/ram/test_qspi.jpg")
-    log.info("文件大小(ramfs)", #data2)
+    local src = "/luadb/clock.jpg"
+    local dst = "/ram/clock.jpg"
 
-    log.info("是否相同", data == data2)
-    log.info("md5", crypto.md5(data), crypto.md5(data2))
+    read_write_test(src, dst, 4096)
+    read_write_test(src, dst, 4095)
+    read_write_test(src, dst, 4097)
+    read_write_test(src, dst, 1024)
+    read_write_test(src, dst, 512)
+    read_write_test(src, dst, 256)
+    read_write_test(src, dst, 128)
+    read_write_test(src, dst, 64)
+    read_write_test(src, dst, 32)
+    read_write_test(src, dst, 16)
+    read_write_test(src, dst, 8)
+    read_write_test(src, dst, 4)
+    read_write_test(src, dst, 2)
+    read_write_test(src, dst, 1)
 
-    local fd = io.open("/ram/test_qspi.jpg", "r")
-    if fd then
-        log.info("文件打开成功")
-        for i = 1, 100000 do
-            local chunk = fd:read(4095)
-            if not chunk then break end
-            log.info("读取数据块大小", #chunk)
-        end
-
-        -- 这里再读取一次，验证文件是否被关闭
-        local chunk = fd:read(4095)
-        if chunk then
-            log.info("文件已经解决, 不应该能读出数据", #chunk)
-        end
-
-        fd:close()
-        log.info("文件关闭成功")
+    for i = 1, 8199 do
+        read_write_test(src, dst, i)
     end
-    -- io.writeFile("dataout.jpg", data2)
 
+    log.info("测试PASS")
 
     os.exit(1)
 end)
