@@ -106,3 +106,8 @@ int luat_spi_unlock(int spi_id)
 {
 	return -1;
 }
+
+uint8_t luat_lcd_qspi_is_no_ram(luat_lcd_conf_t* conf) {
+    return 0;
+}
+
