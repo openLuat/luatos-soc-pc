@@ -18,6 +18,10 @@ void* luat_heap_malloc(size_t len) {
 }
 
 void luat_heap_free(void* ptr) {
+    if (ptr == NULL) {
+        printf("luat_heap_free: ptr is NULL, return\n");
+        return;
+    }
     free(ptr);
 }
 
@@ -119,7 +123,8 @@ void* luat_heap_opt_malloc(LUAT_HEAP_TYPE_E type,size_t len){
 
 void luat_heap_opt_free(LUAT_HEAP_TYPE_E type,void* ptr){
     if (type == LUAT_HEAP_PSRAM) {
-        return luat_brel(&psram_bget, ptr);
+        luat_brel(&psram_bget, ptr);
+        return;
     }
     luat_heap_free(ptr);
 }
