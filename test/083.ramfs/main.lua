@@ -44,6 +44,25 @@ function read_write_test(src, dst, rw_size)
     end
     fd:close()
     fd2:close()
+
+    -- 测试设置seek之后读
+    local fd = io.open(src, "r")
+    local fd2 = io.open(dst, "r")
+    while true do
+        local chunk = fd:read(rw_size)
+        local chunk2 = fd2:read(rw_size)
+        if not chunk and not chunk2 then break end
+        if chunk ~= chunk2 then
+            log.error("分段读取不一致", #chunk, #chunk2, rw_size)
+            os.exit(1)
+        end
+        -- log.info("执行seek操作")
+        fd:seek("cur", 1)
+        -- log.info("执行seek操作2")
+        fd2:seek("cur", 1)
+    end
+    fd:close()
+    fd2:close()
 end
 
 sys.taskInit(function()
