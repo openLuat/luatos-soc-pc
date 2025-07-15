@@ -17,6 +17,7 @@ void luat_lwip_init(void) {
     lwip_init();
 }
 
+#if NO_SYS == 1
 uint32_t lwip_port_rand(void) {
     uint32_t t = 0;
     luat_crypto_trng((char*)&t, sizeof(uint32_t));
@@ -27,3 +28,4 @@ uint32_t sys_now(void) {
     uint32_t ticks = luat_mcu_ticks();
     return ticks;
 }
+#endif

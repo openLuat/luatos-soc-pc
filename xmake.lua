@@ -262,7 +262,8 @@ target("luatos-lua")
         add_files("lwip/api/**.c")
         add_files("lwip/core/**.c")
         add_files("lwip/netif/**.c")
-
+        add_files("lwip/port/win32/*.c")
+        add_defines("NO_SYS=0")
         
         add_includedirs(luatos .. "components/network/ulwip/include")
         add_files(luatos .. "components/network/ulwip/**.c")

@@ -39,9 +39,12 @@
 #define LWIP_IPV4                  1
 #define LWIP_IPV6                  1
 
+#ifndef NO_SYS
 #define NO_SYS                     1
-#define LWIP_SOCKET                (NO_SYS==0)
-#define LWIP_NETCONN               (NO_SYS==0)
+#endif
+
+#define LWIP_SOCKET                0
+#define LWIP_NETCONN               0
 #define LWIP_NETIF_API             (NO_SYS==0)
 
 #define LWIP_IGMP                  1
@@ -217,7 +220,7 @@ a lot of data that needs to be copied, this should be set high. */
 /* ---------- ARP options ---------- */
 #define LWIP_ARP                1
 #define ARP_TABLE_SIZE          10
-#define ARP_QUEUEING            1
+#define ARP_QUEUEING            3
 
 
 /* ---------- IP options ---------- */
@@ -241,7 +244,7 @@ a lot of data that needs to be copied, this should be set high. */
 /* ---------- DHCP options ---------- */
 /* Define LWIP_DHCP to 1 if you want DHCP configuration of
    interfaces. */
-#define LWIP_DHCP               LWIP_UDP
+#define LWIP_DHCP               0
 
 /* 1 if you want to do an ARP check on the offered address
    (recommended). */
