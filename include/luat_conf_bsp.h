@@ -31,9 +31,9 @@
 
 #define LV_HOR_RES_MAX          (2000)
 #define LV_VER_RES_MAX          (2000)
-#define LV_COLOR_DEPTH          16
+#define LV_COLOR_DEPTH          32
 
-#define LV_COLOR_16_SWAP   1
+#define LV_COLOR_16_SWAP   0
 #define LUAT_LCD_COLOR_DEPTH 16
 #define LUAT_USE_LVGL_SDL2 1
 #define LUAT_USE_LCD_SDL2 1
