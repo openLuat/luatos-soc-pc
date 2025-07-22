@@ -9,6 +9,9 @@
 
 #include "luat_ztt.h"
 
+#define LUAT_LOG_TAG "gpio"
+#include "luat_log.h"
+
 luat_gpio_drv_opts_t* gpio_drvs[128];
 
 luat_gpio_t gpio_confs[128];
@@ -97,3 +100,13 @@ void luat_gpio_close(int pin)
     }
 }
 
+void luat_gpio_set_default_cfg(luat_gpio_cfg_t* gpio) {
+    if (gpio) {
+        memset(gpio, 0, sizeof(luat_gpio_cfg_t));
+    }
+}
+
+int luat_gpio_open(luat_gpio_cfg_t* gpio) {
+    LLOGD("luat_gpio_open not supported on PC yet");
+    return -1; // Not implemented
+}
