@@ -42,10 +42,10 @@ if is_host("windows") then
     add_defines("_CRT_SECURE_NO_WARNINGS")
     add_cflags("/utf-8")
     add_includedirs("win32/include")
-    -- add_ldflags("-static")
 elseif is_host("linux") then
     add_defines("LUA_USE_LINUX")
     add_cflags("-ffunction-sections -fdata-sections")
+    add_cflags("-Wno-unused-parameter -Wno-unused-function -Wno-unused-variable")
     add_ldflags("-Wl,--gc-sections")
 elseif is_host("macos") then
     add_defines("LUA_USE_MACOSX")
@@ -255,6 +255,8 @@ target("luatos-lua")
     add_includedirs(luatos_exts.."/vtool/include")
     add_files(luatos_exts.."/vtool/**.c")
     
+    add_includedirs(luatos .. "components/hmeta")
+    add_files(luatos .. "components/hmeta/**.c")
 
     if is_host("windows") then
         -- lwip & zlink
