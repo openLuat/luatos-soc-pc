@@ -1127,7 +1127,7 @@
  *
  * Comment this macro to disable support for Encrypt-then-MAC
  */
-//#define MBEDTLS_SSL_ENCRYPT_THEN_MAC
+#define MBEDTLS_SSL_ENCRYPT_THEN_MAC
 
 /** \def MBEDTLS_SSL_EXTENDED_MASTER_SECRET
  *
@@ -1811,7 +1811,7 @@
  * This module enables the AES-CCM ciphersuites, if other requisites are
  * enabled as well.
  */
-//#define MBEDTLS_CCM_C
+#define MBEDTLS_CCM_C
 
 /**
  * \def MBEDTLS_CERTS_C
