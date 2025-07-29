@@ -52,3 +52,7 @@ int luat_uart_exist(int uart_id) {
 int luat_setup_cb(int uartid, int received, int sent) {
     return 0;
 }
+
+int luat_uart_ctrl(int uart_id, LUAT_UART_CTRL_CMD_E cmd, void* param) {
+    return 0;
+}
