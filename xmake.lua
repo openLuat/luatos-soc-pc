@@ -90,6 +90,7 @@ target("luatos-lua")
             ,luatos.."luat/modules/luat_lib_bit64.c"
             ,luatos.."luat/modules/luat_lib_uart.c"
             ,luatos.."luat/modules/luat_lib_mqttcore.c"
+            ,luatos.."luat/modules/luat_lib_fft.c"
             ,luatos.."luat/modules/luat_lib_libcoap.c"
             ,luatos.."luat/modules/luat_lib_rtc.c"
             ,luatos.."luat/modules/luat_lib_gpio.c"
@@ -121,6 +122,9 @@ target("luatos-lua")
     -- cjson
     add_includedirs(luatos.."components/cjson")
     add_files(luatos.."components/cjson/*.c")
+    -- fft core
+    add_includedirs(luatos.."components/fft", {public = true})
+    add_files(luatos.."components/fft/*.c")
     -- mbedtls
     add_files(luatos.."components/mbedtls/library/*.c")
     add_includedirs(luatos.."components/mbedtls/include")

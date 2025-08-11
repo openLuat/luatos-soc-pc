@@ -85,6 +85,8 @@
 // FSKV库提供fdb库的兼容API, 目标是替代fdb库
 #define LUAT_USE_FSKV 1
 #define LUAT_CONF_FSKV_CUSTOM 1
+// FFT 库开关
+#define LUAT_USE_FFT 1
 // #define LUAT_USE_OTA 1
 // #define LUAT_USE_I2CTOOLS 1
 // #define LUAT_USE_LORA 1

@@ -92,6 +92,9 @@ static const luaL_Reg loadedlibs[] = {
 #ifdef LUAT_USE_LIBGNSS
   {"libgnss", luaopen_libgnss},           // 处理GNSS定位数据
 #endif
+#ifdef LUAT_USE_FFT
+  {"fft", luaopen_fft},                   // FFT 库
+#endif
 #ifdef LUAT_USE_FS
   {"fs",      luaopen_fs},                // 文件系统库,在io库之外再提供一些方法
 #endif
