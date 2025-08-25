@@ -16,6 +16,8 @@ typedef struct log_msg {
 static uint8_t luat_log_uart_port = 0;
 static uint8_t luat_log_level_cur = LUAT_LOG_DEBUG;
 
+#define LOGLOG_SIZE 4096
+
 void luat_log_init_win32(void) {
 }
 
@@ -28,10 +30,18 @@ void luat_print(const char* _str) {
 }
 
 void luat_nprint(char *s, size_t l) {
-    printf("%.*s", l, s);
+    luat_log_write(s, l);
 }
 void luat_log_write(char *s, size_t l) {
-    printf("%.*s", l, s);
+    char buff[LOGLOG_SIZE] = {0};
+    char *tmp = (char *)buff;
+    uint64_t t = luat_mcu_tick64_ms();
+    uint32_t sec = (uint32_t)(t / 1000);
+    uint32_t ms = t % 1000;
+    sprintf_(tmp, "[%08lu.%03lu]", sec, ms);
+    tmp += strlen(tmp);
+    memcpy(tmp, s, l);
+    printf("%.*s", strlen(buff), buff);
 }
 
 void luat_log_set_level(int level) {
@@ -40,16 +50,11 @@ void luat_log_set_level(int level) {
 int luat_log_get_level() {
     return luat_log_level_cur;
 }
-#define LOGLOG_SIZE 4096
+
 void luat_log_log(int level, const char* tag, const char* _fmt, ...) {
     if (luat_log_level_cur > level) return;
     char buff[LOGLOG_SIZE] = {0};
     char *tmp = (char *)buff;
-    uint64_t t = luat_mcu_tick64_ms();
-    uint32_t sec = (uint32_t)(t / 1000);
-    uint32_t ms = t % 1000;
-    sprintf_(tmp, "[%08lu.%03lu]", sec, ms);
-    tmp += strlen(tmp);
     switch (level)
         {
         case LUAT_LOG_DEBUG:
@@ -78,7 +83,6 @@ void luat_log_log(int level, const char* tag, const char* _fmt, ...) {
     tmp += taglen;
     tmp[0] = ' ';
     tmp ++;
-
     size_t len = 0;
     va_list args;
     va_start(args, _fmt);
@@ -89,7 +93,7 @@ void luat_log_log(int level, const char* tag, const char* _fmt, ...) {
         if (len > LOGLOG_SIZE - 1)
             len = LOGLOG_SIZE - 1;
         buff[len] = '\n';
-        luat_nprint(buff, len+1);
+        luat_log_write(buff, len+1);
     }
 }
 
