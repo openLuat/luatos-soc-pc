@@ -8,6 +8,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+
+#include "uv.h"
 
 typedef struct log_msg {
     char* buff;
@@ -33,15 +36,24 @@ void luat_nprint(char *s, size_t l) {
     luat_log_write(s, l);
 }
 void luat_log_write(char *s, size_t l) {
-    char buff[LOGLOG_SIZE] = {0};
-    char *tmp = (char *)buff;
+    char tmp[129] = {0};
+    time_t now;
+    struct tm *local_time;
+    uv_timespec64_t tv;
+    // 获取当前时间戳
+    time(&now);
+    uv_clock_gettime(UV_CLOCK_REALTIME, &tv);
+    // 将时间戳转换为本地时间结构体
+    local_time = localtime(&now);
     uint64_t t = luat_mcu_tick64_ms();
     uint32_t sec = (uint32_t)(t / 1000);
     uint32_t ms = t % 1000;
-    sprintf_(tmp, "[%08lu.%03lu]", sec, ms);
-    tmp += strlen(tmp);
-    memcpy(tmp, s, l);
-    printf("%.*s", strlen(buff), buff);
+    sprintf_(tmp, "[%d-%02d-%02d %02d:%02d:%02d.%03d][%08lu.%03lu] ", 
+        local_time->tm_year + 1900, local_time->tm_mon + 1, local_time->tm_mday,
+        local_time->tm_hour, local_time->tm_min, local_time->tm_sec,
+        tv.tv_nsec/1000000, 
+        sec, ms);
+    printf("%s%.*s", tmp, l, s);
 }
 
 void luat_log_set_level(int level) {
