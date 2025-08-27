@@ -19,6 +19,8 @@ typedef struct log_msg {
 static uint8_t luat_log_uart_port = 0;
 static uint8_t luat_log_level_cur = LUAT_LOG_DEBUG;
 
+extern int32_t luatos_pc_climode;
+
 #define LOGLOG_SIZE 4096
 
 void luat_log_init_win32(void) {
@@ -48,12 +50,17 @@ void luat_log_write(char *s, size_t l) {
     uint64_t t = luat_mcu_tick64_ms();
     uint32_t sec = (uint32_t)(t / 1000);
     uint32_t ms = t % 1000;
-    sprintf_(tmp, "[%d-%02d-%02d %02d:%02d:%02d.%03d][%08lu.%03lu] ", 
-        local_time->tm_year + 1900, local_time->tm_mon + 1, local_time->tm_mday,
-        local_time->tm_hour, local_time->tm_min, local_time->tm_sec,
-        tv.tv_nsec/1000000, 
-        sec, ms);
-    printf("%s%.*s", tmp, l, s);
+    if (luatos_pc_climode) {
+        printf("%.*s", l, s);
+    }
+    else {
+        sprintf_(tmp, "[%d-%02d-%02d %02d:%02d:%02d.%03d][%08lu.%03lu] ", 
+            local_time->tm_year + 1900, local_time->tm_mon + 1, local_time->tm_mday,
+            local_time->tm_hour, local_time->tm_min, local_time->tm_sec,
+            tv.tv_nsec/1000000, 
+            sec, ms);
+        printf("%s%.*s", tmp, l, s);
+    }
 }
 
 void luat_log_set_level(int level) {

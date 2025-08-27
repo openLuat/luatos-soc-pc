@@ -44,10 +44,13 @@ int luat_cmd_parse(int argc, char** argv);
 static int luat_lvg_handler(lua_State* L, void* ptr);
 static void lvgl_timer_cb(uv_timer_t* lvgl_timer);
 
+int32_t luatos_pc_climode;
+
 void uv_luat_main(void* args) {
     (void)args;
     // printf("cmdline_argc %d\n", cmdline_argc);
     if (cmdline_argc == 1) {
+        luatos_pc_climode = 1;
         #ifdef LUAT_CONF_VM_64bit
         LLOGI("LuatOS@%s %s, Build: " __DATE__ " " __TIME__ " 64bit", "PC", LUAT_VERSION);
         #else
