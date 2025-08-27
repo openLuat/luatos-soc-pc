@@ -48,6 +48,11 @@ void uv_luat_main(void* args) {
     (void)args;
     // printf("cmdline_argc %d\n", cmdline_argc);
     if (cmdline_argc == 1) {
+        #ifdef LUAT_CONF_VM_64bit
+        LLOGI("LuatOS@%s %s, Build: " __DATE__ " " __TIME__ " 64bit", "PC", LUAT_VERSION);
+        #else
+        LLOGI("LuatOS@%s %s, Build: " __DATE__ " " __TIME__ " 32bit", "PC", LUAT_VERSION);
+        #endif
         lua_main(cmdline_argc, cmdline_argv);
     }
     else {
