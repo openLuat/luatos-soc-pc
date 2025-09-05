@@ -6,6 +6,7 @@
 #include "luat_irq.h"
 #include "luat_gpio.h"
 #include "luat_gpio_drv.h"
+#include "luat_ch347_pc.h"
 
 #include "luat_ztt.h"
 
@@ -30,6 +31,12 @@ int luat_gpio_setup(luat_gpio_t *gpio){
     ztt_addf(ztt, "irq", "%d", gpio->irq);
     ztt_commit(ztt);
 
+    if(!DevIsOpened)
+        luat_load_ch347(0);
+    if(DevIsOpened) {
+        luat_ch347_gpio_setup(gpio->pin, gpio->mode, gpio->pull, gpio->irq);
+    }
+
     if (gpio_drvs[gpio->pin]) {
         return gpio_drvs[gpio->pin]->setup(NULL, gpio);
     }
@@ -47,6 +54,10 @@ int luat_gpio_set(int pin, int level)
     ztt_addf(ztt, "pin", "%d", pin);
     ztt_addf(ztt, "level", "%d", level);
     ztt_commit(ztt);
+
+    if(DevIsOpened) {
+        luat_ch347_gpio_set(pin, level);
+    }
 
     if (gpio_drvs[pin]) {
         return gpio_drvs[pin]->write(NULL, pin, level);
@@ -74,6 +85,10 @@ int luat_gpio_get(int pin)
     ztt_addf(ztt, "pin", "%d", pin);
     ztt_commit(ztt);
 
+    if(DevIsOpened && (pin >=0 && pin <= 7)) {
+        return luat_ch347_gpio_get(pin);
+    }
+
     if (gpio_drvs[pin]) {
         return gpio_drvs[pin]->read(NULL, pin);
     }
@@ -98,6 +113,11 @@ void luat_gpio_close(int pin)
     if (gpio_drvs[pin]) {
         gpio_drvs[pin]->close(NULL, pin);
     }
+
+    if(DevIsOpened) {
+        luat_ch347_gpio_setup(pin, LUAT_GPIO_INPUT, 0, 0);
+    }
+
 }
 
 void luat_gpio_set_default_cfg(luat_gpio_cfg_t* gpio) {
