@@ -184,6 +184,10 @@
 
 #define LUAT_USE_LVGL_INDEV 1 // 输入设备
 
+// TP 模块与PC触摸驱动
+#define LUAT_USE_TP 1
+#define LUAT_USE_TP_PC 1
+
 #define LUAT_USE_LVGL_ARC   //圆弧 无依赖
 #define LUAT_USE_LVGL_BAR   //进度条 无依赖
 #define LUAT_USE_LVGL_BTN   //按钮 依赖容器CONT

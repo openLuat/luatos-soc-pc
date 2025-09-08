@@ -129,6 +129,68 @@ int luat_rtos_event_recv(luat_rtos_task_handle task_handle, uint32_t wait_event_
     return -1;
 }
 
+typedef struct luat_message_item
+{
+    uint32_t id;
+    void* msg;
+} luat_message_item_t;
+
+int luat_rtos_message_send(luat_rtos_task_handle task_handle, uint32_t message_id, void *p_message) {
+    if (task_handle == NULL) {
+        LLOGE("task_handle is NULL");
+        return -1;
+    }
+    utask_t* task = (utask_t*)task_handle;
+    luat_message_item_t payload = {0};
+    payload.id = message_id;
+    payload.msg = p_message;
+    uv_queue_item_t* item = luat_heap_malloc(sizeof(uv_queue_item_t) + sizeof(luat_message_item_t));
+    if (item == NULL) {
+        LLOGE("out of memory when malloc message item");
+        return -1;
+    }
+    memset(item, 0, sizeof(uv_queue_item_t));
+    memcpy(item->msg, &payload, sizeof(luat_message_item_t));
+    item->size = sizeof(luat_message_item_t);
+    uv_mutex_lock(&task->m);
+    int ret = luat_queue_push(&task->q, item);
+    uv_mutex_unlock(&task->m);
+    return ret;
+}
+
+int luat_rtos_message_recv(luat_rtos_task_handle task_handle, uint32_t *message_id, void **p_p_message, uint32_t timeout) {
+    if (task_handle == NULL || message_id == NULL || p_p_message == NULL) {
+        LLOGE("invalid args for message_recv");
+        return -1;
+    }
+    utask_t* task = (utask_t*)task_handle;
+    uv_queue_item_t* item = luat_heap_malloc(sizeof(uv_queue_item_t) + sizeof(luat_message_item_t));
+    int ret = 0;
+    while (1) {
+        uv_mutex_lock(&task->m);
+        ret = luat_queue_pop(&task->q, item);
+        uv_mutex_unlock(&task->m);
+        if (ret == 0) {
+            luat_message_item_t payload = {0};
+            memcpy(&payload, item->msg, sizeof(luat_message_item_t));
+            *message_id = payload.id;
+            *p_p_message = payload.msg;
+            luat_heap_free(item);
+            return 0;
+        }
+        if (timeout == 0) {
+            luat_heap_free(item);
+            return 1;
+        }
+        if (timeout > 0 && timeout != (size_t)(-1)) {
+            timeout--;
+        }
+        uv_sleep(1);
+    }
+    luat_heap_free(item);
+    return -1;
+}
+
 void luat_os_entry_cri(void) {
 
 }

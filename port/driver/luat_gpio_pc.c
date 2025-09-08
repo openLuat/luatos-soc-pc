@@ -120,6 +120,16 @@ void luat_gpio_close(int pin)
 
 }
 
+int luat_gpio_irq_enable(int pin, uint8_t enabled, uint8_t irq_type, void *arg)
+{
+    (void)pin;
+    (void)enabled;
+    (void)irq_type;
+    (void)arg;
+    // PC 模拟器暂不支持 GPIO 硬件中断，返回成功以满足调用方
+    return 0;
+}
+
 void luat_gpio_set_default_cfg(luat_gpio_cfg_t* gpio) {
     if (gpio) {
         memset(gpio, 0, sizeof(luat_gpio_cfg_t));
