@@ -27,15 +27,6 @@ uint16_t Gpiostatus = 0;                       // GPIO状态
 uint16_t Gpiovalues = 0;                        // GPIO值
 uint8_t Gpioflag = 0;                          // GPIO标志
 
-uint16_t UartDevIsOpened;  //设备是否打开
-uint64_t UartIndex;
-uint64_t TotalTxCnt=0,TotalRxCnt=0,TxFileSize;
-uint16_t StopTxThread,StopRxThread;
-mDeviceInforS UartDevInfor[16] = {0};
-uint16_t UartAutoRecvIsStart = FALSE;
-uint16_t UartAutoRecvToFile = FALSE,UartAutoRecvShow=FALSE;
-HANDLE hRxFile = INVALID_HANDLE_VALUE;
-
 // CH347函数指针
 static PFN_CH347OpenDevice pfn_CH347OpenDevice = NULL;
 static PFN_CH347CloseDevice pfn_CH347CloseDevice = NULL;
@@ -53,12 +44,6 @@ static PFN_CH347SPI_Write pfn_CH347SPI_Write = NULL;
 static PFN_CH347StreamSPI4 pfn_CH347StreamSPI4 = NULL;
 static PFN_CH347GPIO_Set pfn_CH347GPIO_Set = NULL;
 static PFN_CH347GPIO_Get pfn_CH347GPIO_Get = NULL;
-static PFN_CH347Uart_Open pfn_CH347Uart_Open = NULL;
-static PFN_CH347Uart_GetDeviceInfor pfn_CH347Uart_GetDeviceInfor = NULL;
-static PFN_CH347Uart_Close pfn_CH347Uart_Close = NULL;
-static PFN_CH347Uart_Init pfn_CH347Uart_Init = NULL;
-static PFN_CH347Uart_Read pfn_CH347Uart_Read = NULL;
-static PFN_CH347Uart_Write pfn_CH347Uart_Write = NULL;
 
 static HMODULE hCH347DLL = NULL;
 #endif
@@ -89,18 +74,6 @@ int luat_load_ch347(int flag) {
     pfn_CH347StreamSPI4 = (PFN_CH347StreamSPI4)GetProcAddress(hCH347DLL, "CH347StreamSPI4");
 	pfn_CH347GPIO_Set = (PFN_CH347GPIO_Set)GetProcAddress(hCH347DLL, "CH347GPIO_Set");
 	pfn_CH347GPIO_Get = (PFN_CH347GPIO_Get)GetProcAddress(hCH347DLL, "CH347GPIO_Get");
-	pfn_CH347Uart_Open = (PFN_CH347Uart_Open)GetProcAddress(hCH347DLL, "CH347Uart_Open");
-	pfn_CH347Uart_GetDeviceInfor = (PFN_CH347Uart_GetDeviceInfor)GetProcAddress(hCH347DLL, "CH347Uart_GetDeviceInfor");
-	pfn_CH347Uart_Close = (PFN_CH347Uart_Close)GetProcAddress(hCH347DLL, "CH347Uart_Close");
-	pfn_CH347Uart_Init = (PFN_CH347Uart_Init)GetProcAddress(hCH347DLL, "CH347Uart_Init");
-	pfn_CH347Uart_Read = (PFN_CH347Uart_Read)GetProcAddress(hCH347DLL, "CH347Uart_Read");
-	pfn_CH347Uart_Write = (PFN_CH347Uart_Write)GetProcAddress(hCH347DLL, "CH347Uart_Write");
-
-	if(flag == 1) {
-		if (luat_ch347_uart_open()) return 0;
-		else return 1;
-	}
-
 
     if (luat_ch347Device() == 0) {
         LLOGD("no device found");
@@ -523,79 +496,3 @@ void luat_ch347_gpio_close(int pin) {
 #endif
 }
 
-//=================uart===============
-
-int luat_ch347_uart_open() {
-#ifdef _WIN32
-	uint64_t i,oLen,DevCnt = 0;
-	mDeviceInforS DevInfor = {0};
-
-	for(i=0;i<16;i++) {
-		if(pfn_CH347Uart_Open(i) != INVALID_HANDLE_VALUE) {
-			oLen = sizeof(USB_DEVICE_DESCRIPTOR);
-			pfn_CH347Uart_GetDeviceInfor(i,&DevInfor);
-			memcpy(&UartDevInfor[DevCnt],&DevInfor,sizeof(DevInfor));
-
-			// 设置第一个找到的设备为默认设备
-			if (DevCnt == 0) {
-				UartIndex = i;
-			}
-			DevCnt++;
-		}
-		pfn_CH347Uart_Close(i);
-	}
-	if(DevCnt) {
-		UartDevIsOpened = 1;
-	}
-
-	return DevCnt;
-#else
-	LLOGD("not support non-windows platform");
-	return 0;
-#endif
-}
-
-int luat_ch347_uart_set(int baud_rate, uint8_t data_bits, uint8_t parity, uint8_t stop_bits) {
-#ifdef _WIN32
-	if(pfn_CH347Uart_Open(UartIndex) == 0) {
-		LLOGD("open uart failed");
-		return 0;
-	}
-	if(pfn_CH347Uart_Init(UartIndex, baud_rate, data_bits, parity, stop_bits, 0)) {
-		LLOGD("init uart success");
-		return 1;
-	} else {
-		LLOGD("init uart failed");
-		return 0;
-	}
-#else
-	LLOGD("not support non-windows platform");
-	return 0;
-#endif
-}
-
-int luat_ch347_uart_wirite(void* buffer, size_t length) {
-#ifdef _WIN32
-	if(buffer != NULL && length > 0) {
-		pfn_CH347Uart_Write(UartIndex, buffer, &length);
-		return length;
-	}
-#else
-	LLOGD("not support non-windows platform");
-	return 0;
-#endif
-}
-
-int luat_ch347_uart_read(void* buffer, size_t length) {
-#ifdef _WIN32
-	pfn_CH347Uart_Read(UartIndex, buffer, &length);
-	return length;
-#else
-	LLOGD("not support non-windows platform");
-	return 0;
-#endif
-}
-
-int luat_ch347_uart_close() {
-	return pfn_CH347Uart_Close(UartIndex);
-}

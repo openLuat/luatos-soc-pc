@@ -27,18 +27,6 @@ extern uint16_t I2CIsCfg;                              // I2C是否已配置标�
 extern uint32_t SpiI2cGpioDevIndex;                    // 当前选中的SPI/I2C/GPIO设备索引号
 extern mDeviceInforS SpiI2cDevInfor[16];       // SPI/I2C设备信息数组，最多支持16个设备
 extern uint16_t EnablePnPAutoOpen;                     // 启用插拔后设备自动打开关闭功能
-extern uint16_t IntIsEnable;                   // 中断使能标志
-extern uint16_t Gpiostatus;                       // GPIO状态
-
-extern uint16_t UartDevIsOpened;  //设备是否打开
-extern uint64_t UartIndex;
-extern uint64_t TotalTxCnt,TotalRxCnt,TxFileSize;
-extern uint16_t StopTxThread,StopRxThread;
-extern mDeviceInforS UartDevInfor[16];
-extern uint16_t UartAutoRecvIsStart;
-extern uint16_t UartAutoRecvToFile,UartAutoRecvShow;
-extern HANDLE hRxFile;
-
 
 typedef struct _USB_DEVICE_DESCRIPTOR {
     uint8_t bLength;
@@ -79,12 +67,6 @@ typedef BOOL (WINAPI *PFN_CH347StreamSPI4)(ULONG iIndex, ULONG iChipSelect, ULON
 typedef BOOL (WINAPI *PFN_CH347GPIO_Get)(ULONG iIndex, UCHAR *iDir, UCHAR *iData);
 typedef BOOL (WINAPI *PFN_CH347GPIO_Set)(ULONG iIndex, UCHAR iEnable, UCHAR iSetDirOut, UCHAR iSetDataOut);
 
-typedef HANDLE (WINAPI *PFN_CH347Uart_Open)(ULONG iIndex);
-typedef BOOL (WINAPI *PFN_CH347Uart_GetDeviceInfor)(ULONG iIndex,mDeviceInforS *DevInformation);
-typedef BOOL (WINAPI *PFN_CH347Uart_Close)(ULONG iIndex);
-typedef BOOL (WINAPI *PFN_CH347Uart_Init)(ULONG iIndex, DWORD  BaudRate, UCHAR  ByteSize, UCHAR Parity, UCHAR StopBits, UCHAR ByteTimeout);
-typedef BOOL (WINAPI *PFN_CH347Uart_Read)(ULONG iIndex, PVOID oBuffer, PULONG ioLength );
-typedef BOOL (WINAPI *PFN_CH347Uart_Write)(ULONG iIndex, PVOID iBuffer, PULONG ioLength );
 
 #endif
 
@@ -111,9 +93,4 @@ int luat_ch347_gpio_setup(int pin, int mode, int pull, int irq);
 int luat_ch347_gpio_set(int pin, int level);
 int luat_ch347_gpio_get(int pin);
 
-int luat_ch347_uart_open();
-int luat_ch347_uart_set(int baud_rate, uint8_t data_bits, uint8_t parity, uint8_t stop_bits);
-int luat_ch347_uart_wirite(void* buffer, size_t length);
-int luat_ch347_uart_read(void* buffer, size_t length);
-int luat_ch347_uart_close();
 #endif // __LUAT_CH347_PC_H__
