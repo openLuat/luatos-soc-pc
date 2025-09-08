@@ -33,8 +33,8 @@ end
 
 if os.getenv("LUAT_USE_GUI") == "y" then
     add_defines("LUAT_USE_GUI=1")
-    add_requires("libsdl")
-    add_packages("libsdl")
+    add_requires("libsdl2")
+    add_packages("libsdl2")
 end
 
 if is_host("windows") then
@@ -319,6 +319,11 @@ target("luatos-lua")
         -- airui
         add_includedirs(luatos_exts.."/airui/include")
         add_files(luatos_exts.."/airui/**.c")
+
+        -- tp (touch) core only; exclude hardware drivers on PC
+        add_includedirs(luatos.."components/tp")
+        add_files(luatos.."components/tp/luat_lib_tp.c")
+        add_files(luatos.."components/tp/luat_tp.c")
 
     end
 target_end()
