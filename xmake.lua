@@ -35,6 +35,8 @@ if os.getenv("LUAT_USE_GUI") == "y" then
     add_defines("LUAT_USE_GUI=1")
     add_requires("libsdl2")
     add_packages("libsdl2")
+    -- add_requires("libsdl 2.26.2")
+    -- add_packages("libsdl 2.26.2")
 end
 
 if is_host("windows") then

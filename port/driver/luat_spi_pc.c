@@ -3,9 +3,13 @@
 #include "luat_gpio.h"
 #include "luat_msgbus.h"
 #include "luat_spi.h"
+#include "luat_ch347_pc.h"
 
 // 模拟SPI在win32下的实现
 // TODO 当需要返回数据时, 调用lua方法获取需要返回的数据
+
+#define LUAT_LOG_TAG "luat.spi"
+#include "luat_log.h"
 
 #define LUAT_WIN32_SPI_COUNT (3)
 
@@ -34,6 +38,16 @@ int luat_spi_setup(luat_spi_t* spi) {
     if (spi->id < 0 || spi->id >= LUAT_WIN32_SPI_COUNT) {
         return -1;
     }
+    if(!DevIsOpened)
+        luat_load_ch347(0);
+    if(DevIsOpened) {
+        if(luat_ch347_spi_setup(spi->id, spi->CPHA, spi->CPOL, spi->dataw, spi->bit_dict, spi->bandrate, spi->cs)) {
+            LLOGD("spi set up success");
+        } else {
+            LLOGD("spi set up failed");
+            return 0;
+        }
+    }
     memcpy(&win32spis[spi->id].spi, spi, sizeof(luat_spi_t));
     win32spis[spi->id].open = 1;
     return 0;
@@ -53,6 +67,10 @@ int luat_spi_transfer(int spi_id, const char* send_buf, size_t send_length, char
     }
     if (win32spis[spi_id].open == 0)
         return -1;
+    if(DevIsOpened) {
+        return luat_ch347_spi_transfer(spi_id, send_buf, send_length, recv_buf, recv_length);
+    }
+
     memset(recv_buf, 0, recv_length);
     return recv_length;
 }
@@ -64,6 +82,9 @@ int luat_spi_recv(int spi_id, char* recv_buf, size_t length) {
     if (win32spis[spi_id].open == 0)
         return -1;
     memset(recv_buf, 0, length);
+    if(DevIsOpened) {
+        return luat_ch347_spi_recv(spi_id, recv_buf, length);
+    }
     return length;
 }
 //发SPI数据，返回发送字节数
@@ -73,6 +94,9 @@ int luat_spi_send(int spi_id, const char* send_buf, size_t length) {
     }
     if (win32spis[spi_id].open == 0)
         return -1;
+    if(DevIsOpened) {
+        return luat_ch347_spi_transfer(spi_id, send_buf, length, NULL, 0);
+    }
     return length;
 }
 
@@ -113,4 +137,3 @@ uint8_t luat_lcd_qspi_is_no_ram(luat_lcd_conf_t* conf) {
     return 0;
 }
 #endif
-
