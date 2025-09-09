@@ -1,3 +1,4 @@
+#ifdef LUAT_USE_GUI
 #include "luat_base.h"
 #include "luat_tp.h"
 #include "luat_mem.h"
@@ -143,3 +144,4 @@ static void luat_tp_pc_deinit(luat_tp_config_t* conf) {
 }
 
 
+#endif
