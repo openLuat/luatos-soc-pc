@@ -21,12 +21,12 @@
 #endif
 
 #ifdef _WIN32
-extern uint16_t DevIsOpened;                           // 设备是否已打开标志
-extern uint16_t SpiIsCfg;                              // SPI是否已配置标志
-extern uint16_t I2CIsCfg;                              // I2C是否已配置标志
-extern uint32_t SpiI2cGpioDevIndex;                    // 当前选中的SPI/I2C/GPIO设备索引号
-extern mDeviceInforS SpiI2cDevInfor[16];       // SPI/I2C设备信息数组，最多支持16个设备
-extern uint16_t EnablePnPAutoOpen;                     // 启用插拔后设备自动打开关闭功能
+extern uint16_t g_ch3470_DevIsOpened;                           // 设备是否已打开标志
+extern uint16_t g_ch3470_SpiIsCfg;                              // SPI是否已配置标志
+extern uint16_t g_ch3470_I2CIsCfg;                              // I2C是否已配置标志
+extern uint32_t g_ch3470_SpiI2cGpioDevIndex;                    // 当前选中的SPI/I2C/GPIO设备索引号
+extern mDeviceInforS g_ch3470_SpiI2cDevInfor[16];       // SPI/I2C设备信息数组，最多支持16个设备
+extern uint16_t g_ch3470_EnablePnPAutoOpen;                     // 启用插拔后设备自动打开关闭功能
 
 typedef struct _USB_DEVICE_DESCRIPTOR {
     uint8_t bLength;

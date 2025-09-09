@@ -31,9 +31,9 @@ int luat_gpio_setup(luat_gpio_t *gpio){
     ztt_addf(ztt, "irq", "%d", gpio->irq);
     ztt_commit(ztt);
 
-    if(!DevIsOpened)
+    if(!g_ch3470_DevIsOpened)
         luat_load_ch347(0);
-    if(DevIsOpened) {
+    if(g_ch3470_DevIsOpened) {
         luat_ch347_gpio_setup(gpio->pin, gpio->mode, gpio->pull, gpio->irq);
     }
 
@@ -55,7 +55,7 @@ int luat_gpio_set(int pin, int level)
     ztt_addf(ztt, "level", "%d", level);
     ztt_commit(ztt);
 
-    if(DevIsOpened) {
+    if(g_ch3470_DevIsOpened) {
         luat_ch347_gpio_set(pin, level);
     }
 
@@ -85,7 +85,7 @@ int luat_gpio_get(int pin)
     ztt_addf(ztt, "pin", "%d", pin);
     ztt_commit(ztt);
 
-    if(DevIsOpened && (pin >=0 && pin <= 7)) {
+    if(g_ch3470_DevIsOpened && (pin >=0 && pin <= 7)) {
         return luat_ch347_gpio_get(pin);
     }
 
@@ -114,7 +114,7 @@ void luat_gpio_close(int pin)
         gpio_drvs[pin]->close(NULL, pin);
     }
 
-    if(DevIsOpened) {
+    if(g_ch3470_DevIsOpened) {
         luat_ch347_gpio_setup(pin, LUAT_GPIO_INPUT, 0, 0);
     }
 

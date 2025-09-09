@@ -38,9 +38,9 @@ int luat_spi_setup(luat_spi_t* spi) {
     if (spi->id < 0 || spi->id >= LUAT_WIN32_SPI_COUNT) {
         return -1;
     }
-    if(!DevIsOpened)
+    if(!g_ch3470_DevIsOpened)
         luat_load_ch347(0);
-    if(DevIsOpened) {
+    if(g_ch3470_DevIsOpened) {
         if(luat_ch347_spi_setup(spi->id, spi->CPHA, spi->CPOL, spi->dataw, spi->bit_dict, spi->bandrate, spi->cs)) {
             LLOGD("spi set up success");
         } else {
@@ -67,7 +67,7 @@ int luat_spi_transfer(int spi_id, const char* send_buf, size_t send_length, char
     }
     if (win32spis[spi_id].open == 0)
         return -1;
-    if(DevIsOpened) {
+    if(g_ch3470_DevIsOpened) {
         return luat_ch347_spi_transfer(spi_id, send_buf, send_length, recv_buf, recv_length);
     }
 
@@ -82,7 +82,7 @@ int luat_spi_recv(int spi_id, char* recv_buf, size_t length) {
     if (win32spis[spi_id].open == 0)
         return -1;
     memset(recv_buf, 0, length);
-    if(DevIsOpened) {
+    if(g_ch3470_DevIsOpened) {
         return luat_ch347_spi_recv(spi_id, recv_buf, length);
     }
     return length;
@@ -94,7 +94,7 @@ int luat_spi_send(int spi_id, const char* send_buf, size_t length) {
     }
     if (win32spis[spi_id].open == 0)
         return -1;
-    if(DevIsOpened) {
+    if(g_ch3470_DevIsOpened) {
         return luat_ch347_spi_transfer(spi_id, send_buf, length, NULL, 0);
     }
     return length;

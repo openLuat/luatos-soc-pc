@@ -16,16 +16,16 @@
 #include "luat_irq.h"
 
 #ifdef _WIN32
-uint16_t DevIsOpened;                           // 设备是否已打开标志
-uint16_t SpiIsCfg;                              // SPI是否已配置标志
-uint16_t I2CIsCfg;                              // I2C是否已配置标志
-uint32_t SpiI2cGpioDevIndex;                    // 当前选中的SPI/I2C/GPIO设备索引号
-mDeviceInforS SpiI2cDevInfor[16] = { 0 };       // SPI/I2C设备信息数组，最多支持16个设备
-uint16_t EnablePnPAutoOpen;                     // 启用插拔后设备自动打开关闭功能
-uint16_t IntIsEnable = FALSE;                   // 中断使能标志
-uint16_t Gpiostatus = 0;                       // GPIO状态
-uint16_t Gpiovalues = 0;                        // GPIO值
-uint8_t Gpioflag = 0;                          // GPIO标志
+uint16_t g_ch3470_DevIsOpened;                           // 设备是否已打开标志
+uint16_t g_ch3470_SpiIsCfg;                              // SPI是否已配置标志
+uint16_t g_ch3470_I2CIsCfg;                              // I2C是否已配置标志
+uint32_t g_ch3470_SpiI2cGpioDevIndex;                    // 当前选中的SPI/I2C/GPIO设备索引号
+mDeviceInforS g_ch3470_SpiI2cDevInfor[16] = { 0 };       // SPI/I2C设备信息数组，最多支持16个设备
+uint16_t g_ch3470_EnablePnPAutoOpen;                     // 启用插拔后设备自动打开关闭功能
+static uint16_t s_IntIsEnable = FALSE;                   // 中断使能标志
+static uint16_t s_Gpiostatus = 0;                       // GPIO状态
+static uint16_t s_Gpiovalues = 0;                        // GPIO值
+static uint8_t s_Gpioflag = 0;                          // GPIO标志
 
 // CH347函数指针
 static PFN_CH347OpenDevice pfn_CH347OpenDevice = NULL;
@@ -113,11 +113,11 @@ uint64_t luat_ch347Device() {
 			LLOGD("M:%sP:%s", DevInfor.ManufacturerString, DevInfor.ProductString);//SN:%s\n
 
 			sprintf_s(tem, sizeof(tem), "%llu# %s", (unsigned long long)i, DevInfor.FuncDescStr);
-			memcpy(&SpiI2cDevInfor[DevCnt], &DevInfor, sizeof(DevInfor));
+			memcpy(&g_ch3470_SpiI2cDevInfor[DevCnt], &DevInfor, sizeof(DevInfor));
 
 			// 设置第一个找到的设备为默认设备
 			if (DevCnt == 0) {
-				SpiI2cGpioDevIndex = (uint32_t)i;
+				g_ch3470_SpiI2cGpioDevIndex = (uint32_t)i;
 			}
 			DevCnt++;
 			pfn_CH347GetVersion(i, &iDriverVer, &iDLLVer, &ibcdDevice, &iChipType);
@@ -134,21 +134,21 @@ uint64_t luat_ch347Device() {
 
 uint16_t Luat_OpenDevice() {
 #ifdef _WIN32
-	DevIsOpened = 0;	// 默认没有打开成功
-	if (SpiI2cGpioDevIndex == CB_ERR)
+	g_ch3470_DevIsOpened = 0;	// 默认没有打开成功
+	if (g_ch3470_SpiI2cGpioDevIndex == CB_ERR)
 	{
 		return 0;
 	}
 
-	DevIsOpened = (pfn_CH347OpenDevice((ULONG)SpiI2cGpioDevIndex) != INVALID_HANDLE_VALUE);
-	if (DevIsOpened) {
-		pfn_CH347SetTimeout((ULONG)SpiI2cGpioDevIndex, 500, 500);
-		LLOGD("Open the device %s", DevIsOpened ? "Success" : "Failed");
+	g_ch3470_DevIsOpened = (pfn_CH347OpenDevice((ULONG)g_ch3470_SpiI2cGpioDevIndex) != INVALID_HANDLE_VALUE);
+	if (g_ch3470_DevIsOpened) {
+		pfn_CH347SetTimeout((ULONG)g_ch3470_SpiI2cGpioDevIndex, 500, 500);
+		LLOGD("Open the device %s", g_ch3470_DevIsOpened ? "Success" : "Failed");
 	} else {
 		LLOGD("Open the device Failed");
 	}
 
-	return DevIsOpened;
+	return g_ch3470_DevIsOpened;
 #else
     LLOGD("not support non-windows platform");
     return 0;
@@ -174,7 +174,7 @@ int luat_ch347_i2c_setup(int id, int speed) {
 				iMode = 3; break; // 750KHz
 		}
 
-		RetVal = pfn_CH347I2C_Set(SpiI2cGpioDevIndex, iMode);
+		RetVal = pfn_CH347I2C_Set(g_ch3470_SpiI2cGpioDevIndex, iMode);
 		return RetVal;
 	}
 	return 0;
@@ -202,7 +202,7 @@ int luat_ch347_i2c_send(int id, int addr, void* buff, size_t len, uint8_t stop) 
 		send_buffer[0] = (addr << 1) | 0x00;
 		memcpy(&send_buffer[1], buff, len);
 		// 执行I2C读写操作
-		RetVal = pfn_CH347StreamI2C(SpiI2cGpioDevIndex, len + 1, send_buffer, 0, NULL);
+		RetVal = pfn_CH347StreamI2C(g_ch3470_SpiI2cGpioDevIndex, len + 1, send_buffer, 0, NULL);
 
 		free(send_buffer);
 
@@ -228,7 +228,7 @@ int luat_ch347_i2c_recv(int id, int addr, void* buff, size_t len) {
 		}
 		recv_buffer[0] = (addr << 1) | 0x01;
 		// 执行I2C读写操作
-		RetVal = pfn_CH347StreamI2C(SpiI2cGpioDevIndex, 1, recv_buffer, len, &recv_buffer[1]);
+		RetVal = pfn_CH347StreamI2C(g_ch3470_SpiI2cGpioDevIndex, 1, recv_buffer, len, &recv_buffer[1]);
 		if (RetVal) {
 			memcpy(buff, &recv_buffer[1], len);
 		}
@@ -258,7 +258,7 @@ int luat_ch347_i2c_transfer(int id, int addr, uint8_t *reg, size_t reg_len, uint
 		transfer_buffer[reg_len + 1] = (addr << 1) | 0x01;
 		memcpy(&transfer_buffer[reg_len + 2], buff, len);
 		// 执行I2C读写操作
-		RetVal = pfn_CH347StreamI2C(SpiI2cGpioDevIndex, reg_len + len + 2, transfer_buffer, len, &transfer_buffer[reg_len + 1]);
+		RetVal = pfn_CH347StreamI2C(g_ch3470_SpiI2cGpioDevIndex, reg_len + len + 2, transfer_buffer, len, &transfer_buffer[reg_len + 1]);
 		if (RetVal) {
 			memcpy(buff, &transfer_buffer[reg_len + 1], len);
 		}
@@ -327,11 +327,11 @@ int luat_ch347_spi_setup(int id, int CPHA, int CPOL, int dataw, int bit_dict, in
 		SpiDatabits = 0;
 		if(dataw == 16) SpiDatabits = 1;
 
-		RetVal = pfn_CH347SPI_SetFrequency(SpiI2cGpioDevIndex, SpiFrequency);
+		RetVal = pfn_CH347SPI_SetFrequency(g_ch3470_SpiI2cGpioDevIndex, SpiFrequency);
 
-		RetVal = pfn_CH347SPI_SetDataBits(SpiI2cGpioDevIndex, SpiDatabits);
+		RetVal = pfn_CH347SPI_SetDataBits(g_ch3470_SpiI2cGpioDevIndex, SpiDatabits);
 
-		RetVal = pfn_CH347SPI_Init(SpiI2cGpioDevIndex, &SpiCfg);
+		RetVal = pfn_CH347SPI_Init(g_ch3470_SpiI2cGpioDevIndex, &SpiCfg);
 		if (RetVal == 0) {
 			return 0;
 		}
@@ -354,14 +354,14 @@ int luat_ch347_spi_transfer(int spi_id, const char* send_buf, size_t send_length
 
 		if (send_length > 0 && recv_length > 0) {
 			memcpy(recv_buf, send_buf, send_length);
-			RetVal = pfn_CH347StreamSPI4(SpiI2cGpioDevIndex, ChipSelect, send_length, recv_buf);
+			RetVal = pfn_CH347StreamSPI4(g_ch3470_SpiI2cGpioDevIndex, ChipSelect, send_length, recv_buf);
 			return RetVal ? (int)recv_length : 0;
 		} else if (send_length > 0) {
-			RetVal = pfn_CH347SPI_Write(SpiI2cGpioDevIndex, ChipSelect, send_length, 512, (PVOID)send_buf);
+			RetVal = pfn_CH347SPI_Write(g_ch3470_SpiI2cGpioDevIndex, ChipSelect, send_length, 512, (PVOID)send_buf);
 			return RetVal ? (int)send_length : 0;
 		} else if (recv_length > 0) {
 			ULONG actual_length = recv_length;
-			RetVal = pfn_CH347SPI_Read(SpiI2cGpioDevIndex, ChipSelect, 0, &actual_length, recv_buf);
+			RetVal = pfn_CH347SPI_Read(g_ch3470_SpiI2cGpioDevIndex, ChipSelect, 0, &actual_length, recv_buf);
 			return RetVal ? (int)actual_length : 0;
 		}
 		return 0;
@@ -379,7 +379,7 @@ int luat_ch347_spi_recv(int spi_id, char* recv_buf, size_t length) {
 		UCHAR ChipSelect = 0x80;
 		ULONG actual_length = length;
 
-		RetVal = pfn_CH347SPI_Read(SpiI2cGpioDevIndex, ChipSelect, 0, &actual_length, recv_buf);
+		RetVal = pfn_CH347SPI_Read(g_ch3470_SpiI2cGpioDevIndex, ChipSelect, 0, &actual_length, recv_buf);
 		return RetVal ? (int)actual_length : 0;
 	}
 	return 0;
@@ -394,7 +394,7 @@ int luat_ch347_spi_send(int spi_id, const char* send_buf, size_t length) {
 		BOOL RetVal = FALSE;
 		UCHAR ChipSelect = 0x80;
 
-		RetVal = pfn_CH347SPI_Write(SpiI2cGpioDevIndex, ChipSelect, length, 0, (PVOID)send_buf);
+		RetVal = pfn_CH347SPI_Write(g_ch3470_SpiI2cGpioDevIndex, ChipSelect, length, 0, (PVOID)send_buf);
 		return RetVal ? (int)length : 0;
 	}
 	return 0;
@@ -408,7 +408,7 @@ int luat_ch347_spi_change_speed(int spi_id, uint32_t speed) {
 	if(spi_id == 0) {
 		BOOL RetVal = FALSE;
 
-		RetVal = pfn_CH347SPI_SetFrequency(SpiI2cGpioDevIndex, speed);
+		RetVal = pfn_CH347SPI_SetFrequency(g_ch3470_SpiI2cGpioDevIndex, speed);
 		return RetVal ? 1 : 0;
 	}
 	return 0;
@@ -420,22 +420,20 @@ int luat_ch347_spi_change_speed(int spi_id, uint32_t speed) {
 // ============== GPIO ==============
 
 int luat_ch347_gpio_setup(int pin, int mode, int pull, int irq) {
-	LLOGD("luat_ch347_gpio_setup: pin=%d, mode=%d, pull=%d, irq=%d", pin, mode, pull, irq);
 #ifdef _WIN32
 	if(pin >=0 && pin <= 7) {
-		if(((Gpiostatus & 0x8000) == 0) || ((Gpiovalues & 0x8000) == 0)) { // 最高位为0，表示未初始化
+		if(((s_Gpiostatus & 0x8000) == 0) || ((s_Gpiovalues & 0x8000) == 0)) { // 最高位为0，表示未初始化
 			luat_ch347_gpio_get(-1);
 		}
-		Gpioflag |= (1 << pin);
+		s_Gpioflag |= (1 << pin);
 
 		// 设置GPIO模式
 		if(mode == 0)  // 输出模式
-			Gpiostatus |= (1 << pin);
+			s_Gpiostatus |= (1 << pin);
 		else           // 输入模式
-			Gpiostatus &= ~(1 << pin);
+			s_Gpiostatus &= ~(1 << pin);
 
-		pfn_CH347GPIO_Set(SpiI2cGpioDevIndex, Gpioflag,  (uint8_t)(Gpiostatus & 0x00FF), (uint8_t)(Gpiovalues & 0x00FF));
-		LLOGD("GPIO setup completed: Gpioflag=%#x, Gpiostatus=%#x, Gpiovalues=%#x", Gpioflag, Gpiostatus, Gpiovalues);
+		pfn_CH347GPIO_Set(g_ch3470_SpiI2cGpioDevIndex, s_Gpioflag,  (uint8_t)(s_Gpiostatus & 0x00FF), (uint8_t)(s_Gpiovalues & 0x00FF));
 	} else {
 		LLOGD("only support GPIO0~7");
 		return 0;
@@ -449,15 +447,14 @@ int luat_ch347_gpio_setup(int pin, int mode, int pull, int irq) {
 int luat_ch347_gpio_set(int pin, int level) {
 #ifdef _WIN32
 	if(pin >=0 && pin <= 7) {
-		if(((Gpiostatus & 0x8000) == 0) || ((Gpiovalues & 0x8000) == 0)) { // 最高位为0，表示未初始化
+		if(((s_Gpiostatus & 0x8000) == 0) || ((s_Gpiovalues & 0x8000) == 0)) { // 最高位为0，表示未初始化
 			luat_ch347_gpio_get(-1);
 		}
 		if(level)
-			Gpiovalues |= (1 << pin);
+			s_Gpiovalues |= (1 << pin);
 		else
-			Gpiovalues &= ~(1 << pin);
-		LLOGD("luat_ch347_gpio_set pin %d level %d", pin, level);
-		pfn_CH347GPIO_Set(SpiI2cGpioDevIndex, Gpioflag,  (uint8_t)(Gpiostatus & 0x00FF), (uint8_t)(Gpiovalues & 0x00FF));
+			s_Gpiovalues &= ~(1 << pin);
+		pfn_CH347GPIO_Set(g_ch3470_SpiI2cGpioDevIndex, s_Gpioflag,  (uint8_t)(s_Gpiostatus & 0x00FF), (uint8_t)(s_Gpiovalues & 0x00FF));
 	} else {
 		LLOGD("only support GPIO0~7");
 		return 0;
@@ -471,9 +468,9 @@ int luat_ch347_gpio_set(int pin, int level) {
 int luat_ch347_gpio_get(int pin) {
 #ifdef _WIN32
 	uint8_t i = 0, iDir = 0, iData = 0;
-	pfn_CH347GPIO_Get(SpiI2cGpioDevIndex, &iDir, &iData);
-	Gpiostatus |= 0x8000 | (uint16_t)iDir;
-	Gpiovalues |= 0x8000 | (uint16_t)iData;
+	pfn_CH347GPIO_Get(g_ch3470_SpiI2cGpioDevIndex, &iDir, &iData);
+	s_Gpiostatus |= 0x8000 | (uint16_t)iDir;
+	s_Gpiovalues |= 0x8000 | (uint16_t)iData;
 
 	if(pin >=0 && pin <= 7) {
 		return (iData >> pin) & 0x01;
@@ -489,7 +486,7 @@ int luat_ch347_gpio_get(int pin) {
 void luat_ch347_gpio_close(int pin) {
 #ifdef _WIN32
 	if(pin >=0 && pin <= 7)
-		Gpioflag &= !(1 << pin);
+		s_Gpioflag &= !(1 << pin);
 #else
 	LLOGD("not support non-windows platform");
 	return 0;
