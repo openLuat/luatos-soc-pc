@@ -2,11 +2,6 @@
     "fonts": [
     ],
     "images": [
-        {
-            "abso_filename": "E:/Air_LuatOS/Git_Project/LuatOS/luat/demo/lcd/logo.jpg",
-            "colorFormat": "RGBA",
-            "rela_filename": "img/logo.jpg"
-        }
     ],
     "pages": [
         {
@@ -31,7 +26,7 @@
                         "x": 0,
                         "y": 0
                     },
-                    "source": "logo",
+                    "source": "default",
                     "styles": [
                         {
                             "part": 0,
@@ -61,8 +56,7 @@
                             "part": 0,
                             "state": 6
                         }
-                    ],
-                    "type": "Image"
+                    ]
                 },
                 {
                     "auto_size": true,
@@ -160,7 +154,6 @@
                             "state": 6
                         }
                     ],
-                    "type": "Line",
                     "y_invert": false
                 },
                 {
@@ -253,8 +246,7 @@
                             "state": 6
                         }
                     ],
-                    "text": "上海合宙通讯科技有限公司",
-                    "type": "Label"
+                    "text": "上海合宙通讯科技有限公司"
                 },
                 {
                     "checkable": false,
@@ -374,8 +366,7 @@
                             "part": 0,
                             "state": 6
                         }
-                    ],
-                    "type": "Button"
+                    ]
                 },
                 {
                     "angle": [
@@ -701,8 +692,7 @@
                             "part": 66,
                             "state": 6
                         }
-                    ],
-                    "type": "Dropdown"
+                    ]
                 },
                 {
                     "checked": false,
@@ -772,8 +762,7 @@
                             "state": 6
                         }
                     ],
-                    "text": "Enable/Disable",
-                    "type": "Check box"
+                    "text": "Enable/Disable"
                 },
                 {
                     "class": "lv_switch",
@@ -794,7 +783,7 @@
                     "styles": [
                         {
                             "Background": {
-                                "bg_color": "0x85C370"
+                                "bg_color": "0x85c370"
                             },
                             "Outline": {
                                 "outline_color": "0x1caece"
@@ -803,26 +792,59 @@
                             "state": 0
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x85c370"
+                            },
+                            "Outline": {
+                                "outline_color": "0x1caece"
+                            },
                             "part": 0,
                             "state": 1
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x85c370"
+                            },
+                            "Outline": {
+                                "outline_color": "0x1caece"
+                            },
                             "part": 0,
                             "state": 2
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x85c370"
+                            },
                             "part": 0,
                             "state": 3
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x85c370"
+                            },
+                            "Outline": {
+                                "outline_color": "0x1caece"
+                            },
                             "part": 0,
                             "state": 4
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x85c370"
+                            },
+                            "Outline": {
+                                "outline_color": "0x1caece"
+                            },
                             "part": 0,
                             "state": 5
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x85c370"
+                            },
+                            "Outline": {
+                                "outline_color": "0x1caece"
+                            },
                             "part": 0,
                             "state": 6
                         },
@@ -882,8 +904,7 @@
                             "part": 2,
                             "state": 6
                         }
-                    ],
-                    "type": "Switch"
+                    ]
                 },
                 {
                     "class": "lv_textarea",
@@ -1094,8 +1115,7 @@
                         }
                     ],
                     "text": "Text area",
-                    "text_align": 0,
-                    "type": "Text area"
+                    "text_align": 0
                 },
                 {
                     "brightness": 120,
@@ -1116,41 +1136,55 @@
                     "styles": [
                         {
                             "Background": {
-                                "bg_color": "0x7F5358"
-                            },
-                            "Outline": {
-                                "outline_color": "0x1caece"
+                                "bg_color": "0x7f5358"
                             },
                             "part": 0,
                             "state": 0
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x7f5358"
+                            },
                             "part": 0,
                             "state": 1
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x7f5358"
+                            },
                             "part": 0,
                             "state": 2
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x7f5358"
+                            },
                             "part": 0,
                             "state": 3
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x7f5358"
+                            },
                             "part": 0,
                             "state": 4
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x7f5358"
+                            },
                             "part": 0,
                             "state": 5
                         },
                         {
+                            "Background": {
+                                "bg_color": "0x7f5358"
+                            },
                             "part": 0,
                             "state": 6
                         }
                     ],
-                    "switch": 1,
-                    "type": "LED"
+                    "switch": 1
                 },
                 {
                     "animation_state": 0,
@@ -1279,7 +1313,7 @@
                     "styles": [
                         {
                             "Background": {
-                                "bg_color": "0x4F9ACE"
+                                "bg_color": "0x4f9ace"
                             },
                             "Outline": {
                                 "outline_color": "0x1caece"
@@ -1423,41 +1457,345 @@
                     "styles": [
                         {
                             "Background": {
-                                "bg_color": "0xB0FFAF"
-                            },
-                            "Outline": {
-                                "outline_color": "0x1caece"
+                                "bg_color": "0xb0ffaf"
                             },
                             "part": 0,
                             "state": 0
                         },
                         {
+                            "Background": {
+                                "bg_color": "0xb0ffaf"
+                            },
                             "part": 0,
                             "state": 1
                         },
                         {
+                            "Background": {
+                                "bg_color": "0xb0ffaf"
+                            },
                             "part": 0,
                             "state": 2
                         },
                         {
+                            "Background": {
+                                "bg_color": "0xb0ffaf"
+                            },
                             "part": 0,
                             "state": 3
                         },
                         {
+                            "Background": {
+                                "bg_color": "0xb0ffaf"
+                            },
                             "part": 0,
                             "state": 4
                         },
                         {
+                            "Background": {
+                                "bg_color": "0xb0ffaf"
+                            },
                             "part": 0,
                             "state": 5
                         },
                         {
+                            "Background": {
+                                "bg_color": "0xb0ffaf"
+                            },
                             "part": 0,
                             "state": 6
                         }
                     ],
-                    "switch": 0,
-                    "type": "LED"
+                    "switch": 0
+                },
+                {
+                    "class": "lv_textarea",
+                    "click": true,
+                    "cursor_blink_time": 144,
+                    "cursor_pos": 38,
+                    "drag": false,
+                    "edge_flash": false,
+                    "events": [
+                    ],
+                    "geometry": {
+                        "height": 71,
+                        "width": 137,
+                        "x": 197,
+                        "y": 143
+                    },
+                    "hidden": false,
+                    "locked": false,
+                    "max_length": 0,
+                    "name": "text_area_2",
+                    "one_line_mode": false,
+                    "password_mode": false,
+                    "placeholder": "",
+                    "scroll_propagation": false,
+                    "scrollbar_mode": 2,
+                    "styles": [
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 0,
+                            "state": 0
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 0,
+                            "state": 1
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 0,
+                            "state": 2
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 0,
+                            "state": 3
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 0,
+                            "state": 4
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 0,
+                            "state": 5
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 0,
+                            "state": 6
+                        },
+                        {
+                            "part": 1,
+                            "state": 0
+                        },
+                        {
+                            "part": 1,
+                            "state": 1
+                        },
+                        {
+                            "part": 1,
+                            "state": 2
+                        },
+                        {
+                            "part": 1,
+                            "state": 3
+                        },
+                        {
+                            "part": 1,
+                            "state": 4
+                        },
+                        {
+                            "part": 1,
+                            "state": 5
+                        },
+                        {
+                            "part": 1,
+                            "state": 6
+                        },
+                        {
+                            "part": 2,
+                            "state": 0
+                        },
+                        {
+                            "part": 2,
+                            "state": 1
+                        },
+                        {
+                            "part": 2,
+                            "state": 2
+                        },
+                        {
+                            "part": 2,
+                            "state": 3
+                        },
+                        {
+                            "part": 2,
+                            "state": 4
+                        },
+                        {
+                            "part": 2,
+                            "state": 5
+                        },
+                        {
+                            "part": 2,
+                            "state": 6
+                        },
+                        {
+                            "part": 3,
+                            "state": 0
+                        },
+                        {
+                            "part": 3,
+                            "state": 1
+                        },
+                        {
+                            "part": 3,
+                            "state": 2
+                        },
+                        {
+                            "part": 3,
+                            "state": 3
+                        },
+                        {
+                            "part": 3,
+                            "state": 4
+                        },
+                        {
+                            "part": 3,
+                            "state": 5
+                        },
+                        {
+                            "part": 3,
+                            "state": 6
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 4,
+                            "state": 0
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 4,
+                            "state": 1
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 4,
+                            "state": 2
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 4,
+                            "state": 3
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 4,
+                            "state": 4
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 4,
+                            "state": 5
+                        },
+                        {
+                            "Text": {
+                                "text_font": "Simsun 16"
+                            },
+                            "part": 4,
+                            "state": 6
+                        }
+                    ],
+                    "text": "姓名: {{person.name}}\n年龄: {{person.age}}",
+                    "text_align": 1
+                },
+                {
+                    "checkable": false,
+                    "class": "lv_btn",
+                    "click": true,
+                    "drag": false,
+                    "events": [
+                        "btn_event1#Clicked#bind_script#update_age"
+                    ],
+                    "fit": 0,
+                    "geometry": {
+                        "height": 35,
+                        "width": 133,
+                        "x": 199,
+                        "y": 93
+                    },
+                    "hidden": false,
+                    "layout": 1,
+                    "locked": false,
+                    "name": "button_2",
+                    "state": 0,
+                    "styles": [
+                        {
+                            "Value": {
+                                "value_font": "Simsun 16",
+                                "value_str": "点我年龄+1"
+                            },
+                            "part": 0,
+                            "state": 0
+                        },
+                        {
+                            "Value": {
+                                "value_font": "Simsun 16",
+                                "value_str": "点我年龄+1"
+                            },
+                            "part": 0,
+                            "state": 1
+                        },
+                        {
+                            "Value": {
+                                "value_font": "Simsun 16",
+                                "value_str": "点我年龄+1"
+                            },
+                            "part": 0,
+                            "state": 2
+                        },
+                        {
+                            "Value": {
+                                "value_font": "Simsun 16",
+                                "value_str": "点我年龄+1"
+                            },
+                            "part": 0,
+                            "state": 3
+                        },
+                        {
+                            "Value": {
+                                "value_font": "Simsun 16",
+                                "value_str": "点我年龄+1"
+                            },
+                            "part": 0,
+                            "state": 4
+                        },
+                        {
+                            "Value": {
+                                "value_font": "Simsun 16",
+                                "value_str": "点我年龄+1"
+                            },
+                            "part": 0,
+                            "state": 5
+                        },
+                        {
+                            "Value": {
+                                "value_font": "Simsun 16",
+                                "value_str": "点我年龄+1"
+                            },
+                            "part": 0,
+                            "state": 6
+                        }
+                    ]
                 }
             ],
             "events": [
@@ -1477,7 +1815,6 @@
                     "state": 0
                 }
             ],
-            "type": "screen",
             "visible": true
         }
     ],
