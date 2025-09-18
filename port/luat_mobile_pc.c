@@ -375,3 +375,12 @@ void luat_mobile_print_apn_by_mcc_mnc(uint16_t mcc, uint16_t mnc)
 {   
 
 }
+
+
+// 补充一个空实现
+void luat_mobile_rrc_get_idle_meas_threshold(int16_t *sIntraSearchP, int16_t *sNonIntraSearchP, int16_t *sIntraSearchQ, int16_t *sNonIntraSearchQ) {
+	*sIntraSearchP = 0;
+	*sNonIntraSearchP = 0;
+	*sIntraSearchQ = 0;
+	*sNonIntraSearchQ = 0;
+}
