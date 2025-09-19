@@ -32,10 +32,10 @@ static int file_accessible(const char* path) {
 static const char* pick_default_font(void) {
 #ifdef _WIN32
     static const char* cands[] = {
-        "C:/Windows/Fonts/msyh.ttc",
-        "C:/Windows/Fonts/msyh.ttf",
         "C:/Windows/Fonts/simhei.ttf",
-        "C:/Windows/Fonts/mingliu.ttc",
+        // "C:/Windows/Fonts/msyh.ttc",
+        // "C:/Windows/Fonts/msyhbd.ttc",
+        // "C:/Windows/Fonts/mingliu.ttc",
         NULL
     };
 #elif __APPLE__
@@ -61,6 +61,7 @@ static const char* pick_default_font(void) {
 int GT_Font_Init(void) {
     if (s_ft_ok) return 1;
     if (FT_Init_FreeType(&s_ft_lib)) return 0;
+    // 等有了高通的字体专用库再制定，目前先根据平台用默认的
     const char* font_file = getenv("LUAT_GTFONT_FILE");
     if (!file_accessible(font_file)) font_file = pick_default_font();
     if (!font_file) return 0;
@@ -79,13 +80,12 @@ static inline void set_bit_1bpp(uint8_t* buf, uint32_t w, uint32_t x, uint32_t y
 
 // 将 (x,y) 位置对应的像素写入 2bpp（每字节 4 像素，先高 2bit）
 static inline void set_pix_2bpp(uint8_t* buf, uint32_t w, uint32_t x, uint32_t y, uint8_t v2) {
-    // v2 仅取低 2bit
+    // v2 仅取低 2bit；与固件保持一致：bytes_per_row = ((w+7)/8) * 2
     v2 &= 0x03;
-    uint32_t groups_per_row = (w + 7) / 8; // 与灰度路径的 t 公式保持一致：t = ((w+7)/8) * grade
-    uint32_t byte_index_in_row = (x / 4);  // 4 像素/字节
-    uint32_t byte_index = y * (groups_per_row * 2) + byte_index_in_row;
-    uint8_t shift = (uint8_t)((3 - (x % 4)) * 2); // 先写高位像素
-    uint8_t mask = (uint8_t)(0x03u << shift);
+    uint32_t bytes_per_row = ((w + 7) / 8) * 2; // 等价于 ceil(w/4)
+    uint32_t byte_index = y * bytes_per_row + (x / 4);
+    uint8_t shift = (uint8_t)((3 - (x % 4)) * 2);
+    uint8_t mask  = (uint8_t)(0x03u << shift);
     buf[byte_index] = (uint8_t)((buf[byte_index] & ~mask) | ((uint8_t)(v2 << shift)));
 }
 
@@ -108,10 +108,13 @@ unsigned int get_font(unsigned char *pBits,
     FT_GlyphSlot slot = s_ft_face->glyph;
     FT_Bitmap*   bm   = &slot->bitmap;
 
-    // 简单居中到目标框内
-    int off_x = 0; // 左侧对齐
+    // 对齐方式：基线对齐（使用 ascender/bitmap_top）+ 左对齐
+    int off_x = 0;
     int off_y = 0;
-    if ((int)h > (int)bm->rows) off_y = (int)(h - bm->rows) / 2;
+    int asc_px = (int)(s_ft_face->size->metrics.ascender >> 6);
+    if (asc_px < 0) asc_px = 0;
+    if (asc_px > (int)h) asc_px = (int)h;
+    off_y = asc_px - (int)slot->bitmap_top;
     for (int yy = 0; yy < (int)bm->rows; yy++) {
         int dy = off_y + yy;
         if (dy < 0 || dy >= (int)h) continue;
@@ -123,19 +126,23 @@ unsigned int get_font(unsigned char *pBits,
         }
     }
     uint32_t adv = (uint32_t)((slot->advance.x + 32) >> 6);
-    if (adv > w) adv = w;
-    return adv ? adv : (uint32_t)bm->width;
+    if (adv > w) adv = w;                      // 不超过单元宽
+    if (adv < (uint32_t)bm->width) adv = (uint32_t)bm->width; // 至少覆盖位图宽，避免字符被截断
+    if (adv == 0) adv = (uint32_t)bm->width;   // 兜底
+    return adv;
 }
 
 static inline void set_pix_gray(uint8_t* buf, uint32_t w, uint32_t x, uint32_t y, uint8_t bpp, uint8_t val) {
     if (bpp == 4) {
-        uint32_t bytes_per_row = ((w + 7) / 8) * 4; // 等于 ceil(w/2)
+        // 与固件保持一致：bytes_per_row = ((w+7)/8) * 4 （等价于 ceil(w/2)）
+        uint32_t bytes_per_row = ((w + 7) / 8) * 4;
         uint32_t byte_index = y * bytes_per_row + (x / 2);
         uint8_t  shift = (uint8_t)((1 - (x % 2)) * 4);
         uint8_t  mask  = (uint8_t)(0x0Fu << shift);
         buf[byte_index] = (uint8_t)((buf[byte_index] & ~mask) | ((uint8_t)(val & 0x0F) << shift));
     } else if (bpp == 2) {
-        uint32_t bytes_per_row = ((w + 7) / 8) * 2; // 等于 ceil(w/4)
+        // 与固件保持一致：bytes_per_row = ((w+7)/8) * 2 （等价于 ceil(w/4)）
+        uint32_t bytes_per_row = ((w + 7) / 8) * 2;
         uint32_t byte_index = y * bytes_per_row + (x / 4);
         uint8_t  shift = (uint8_t)((3 - (x % 4)) * 2);
         uint8_t  mask  = (uint8_t)(0x03u << shift);
@@ -143,6 +150,7 @@ static inline void set_pix_gray(uint8_t* buf, uint32_t w, uint32_t x, uint32_t y
     }
 }
 
+// 渲染灰度字体，返回字形宽度和灰度阶数
 unsigned int* get_Font_Gray(unsigned char *pBits,
                             unsigned char sty,
                             unsigned long fontCode,
@@ -150,32 +158,40 @@ unsigned int* get_Font_Gray(unsigned char *pBits,
                             unsigned char thick) {
     (void)sty; (void)thick;
     static unsigned int re_buff[2];
+    // 参数检查：pBits不能为空，fontSize不能为0，FreeType库必须初始化成功
     if (!pBits || fontSize == 0 || !s_ft_ok) {
         re_buff[0] = 0;
-        re_buff[1] = 2;
+        re_buff[1] = 2; // 默认返回2阶
         return re_buff;
     }
     const uint32_t w = fontSize;
     const uint32_t h = fontSize;
 
-    // 与固件约定：小号用 4 阶，大号用 2 阶
+    // 与固件约定：小号用 4 阶码流，大号用 2 阶码流（此处不做灰度量化，统一与 get_font 一致）
     uint8_t bpp = (fontSize >= 16 && fontSize < 34) ? 4 : 2;
+    // 计算每行字节数，和固件保持一致
     uint32_t bytes_per_row = ((w + 7) / 8) * bpp;
+    // 清空输出缓冲区
     memset(pBits, 0, bytes_per_row * h);
 
-    uint32_t codepoint = (uint32_t)fontCode; // 视为 Unicode
-    if (FT_Set_Pixel_Sizes(s_ft_face, 0, h)) {
-        re_buff[0] = 0; re_buff[1] = bpp; return re_buff;
-    }
-    if (FT_Load_Char(s_ft_face, codepoint, FT_LOAD_RENDER)) {
-        re_buff[0] = 0; re_buff[1] = bpp; return re_buff;
-    }
+    // 字符编码，PC 仿真直接视为 Unicode
+    uint32_t codepoint = (uint32_t)fontCode;
+    // 设置字体像素大小
+    if (FT_Set_Pixel_Sizes(s_ft_face, 0, h)) { re_buff[0] = 0; re_buff[1] = bpp; return re_buff; }
+    // 加载并渲染字符
+    if (FT_Load_Char(s_ft_face, codepoint, FT_LOAD_RENDER)) { re_buff[0] = 0; re_buff[1] = bpp; return re_buff; }
     FT_GlyphSlot slot = s_ft_face->glyph;
     FT_Bitmap*   bm   = &slot->bitmap;
 
+    // 对齐方式：基线对齐（使用 ascender/bitmap_top）+ 左对齐
     int off_x = 0;
     int off_y = 0;
-    if ((int)h > (int)bm->rows) off_y = (int)(h - bm->rows) / 2;
+    int asc_px = (int)(s_ft_face->size->metrics.ascender >> 6);
+    if (asc_px < 0) asc_px = 0;
+    if (asc_px > (int)h) asc_px = (int)h;
+    off_y = asc_px - (int)slot->bitmap_top;
+
+    // 遍历位图像素，按阈值写入满强度 2/4 阶码流
     for (int yy = 0; yy < (int)bm->rows; yy++) {
         int dy = off_y + yy;
         if (dy < 0 || dy >= (int)h) continue;
@@ -183,20 +199,23 @@ unsigned int* get_Font_Gray(unsigned char *pBits,
             int dx = off_x + xx;
             if (dx < 0 || dx >= (int)w) continue;
             uint8_t val = bm->buffer[yy * bm->pitch + xx]; // 0..255
-            if (bpp == 4) {
-                uint8_t v4 = (uint8_t)((val * 15 + 127) / 255);
-                set_pix_gray(pBits, w, (uint32_t)dx, (uint32_t)dy, 4, v4);
-            } else {
-                uint8_t v2 = (uint8_t)((val * 3 + 127) / 255);
-                set_pix_gray(pBits, w, (uint32_t)dx, (uint32_t)dy, 2, v2);
+            if (val > 127) {
+                if (bpp == 4) {
+                    set_pix_gray(pBits, w, (uint32_t)dx, (uint32_t)dy, 4, 0x0F);
+                } else {
+                    set_pix_gray(pBits, w, (uint32_t)dx, (uint32_t)dy, 2, 0x03);
+                }
             }
         }
     }
 
+    // 计算字形实际宽度（advance），兜底处理，避免被截断
     uint32_t adv = (uint32_t)((slot->advance.x + 32) >> 6);
-    if (adv > w) adv = w;
-    re_buff[0] = adv ? adv : (unsigned int)bm->width;
-    re_buff[1] = bpp; // 用“阶”表征 bpp（2 或 4）
+    if (adv > w) adv = w;                                      // 不超过单元宽
+    if (adv < (uint32_t)bm->width) adv = (uint32_t)bm->width;  // 至少覆盖位图宽
+    if (adv == 0) adv = (uint32_t)bm->width;                   // 兜底
+    re_buff[0] = adv;
+    re_buff[1] = bpp; // 返回灰度阶数（2或4）
     return re_buff;
 }
 
