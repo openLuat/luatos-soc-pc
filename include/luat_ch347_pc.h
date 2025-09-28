@@ -83,7 +83,7 @@ int luat_ch347_i2c_transfer(int id, int addr, uint8_t *reg, size_t reg_len, uint
 int luat_ch347_i2c_no_block_transfer(int id, int addr, uint8_t is_read, uint8_t *reg, size_t reg_len, uint8_t *buff, size_t len, uint16_t Toms, void *CB, void *pParam);
 int luat_ch347_i2c_close(int id);
 
-int luat_ch347_spi_setup(int id, int CPHA, int CPOL, int dataw, int bit_dict, int banrate, int cs);
+int luat_ch347_spi_setup(int id, int CPHA, int CPOL, int dataw, int bit_dict, int banrate, int cs, int mode);
 int luat_ch347_spi_transfer(int spi_id, const char* send_buf, size_t send_length, char* recv_buf, size_t recv_length);
 int luat_ch347_spi_recv(int spi_id, char* recv_buf, size_t length);
 int luat_ch347_spi_send(int spi_id, const char* send_buf, size_t length);
