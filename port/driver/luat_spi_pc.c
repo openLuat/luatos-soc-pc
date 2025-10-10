@@ -31,6 +31,7 @@ int luat_spi_bus_setup(luat_spi_device_t* spi_dev){
     }
     memcpy(&win32spis[bus_id].spi, &(spi_dev->spi_config), sizeof(luat_spi_t));
     win32spis[bus_id].open = 1;
+    luat_spi_setup(&spi_dev->spi_config);
     return 0;
 }
 
@@ -41,7 +42,7 @@ int luat_spi_setup(luat_spi_t* spi) {
     if(!g_ch3470_DevIsOpened)
         luat_load_ch347(0);
     if(g_ch3470_DevIsOpened) {
-        if(luat_ch347_spi_setup(spi->id, spi->CPHA, spi->CPOL, spi->dataw, spi->bit_dict, spi->bandrate, spi->cs)) {
+        if(luat_ch347_spi_setup(spi->id, spi->CPHA, spi->CPOL, spi->dataw, spi->bit_dict, spi->bandrate, spi->cs, spi->mode)) {
             LLOGD("spi set up success");
         } else {
             LLOGD("spi set up failed");

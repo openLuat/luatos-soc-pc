@@ -26,6 +26,7 @@ static uint16_t s_IntIsEnable = FALSE;                   // 中断使能标志
 static uint16_t s_Gpiostatus = 0;                       // GPIO状态
 static uint16_t s_Gpiovalues = 0;                        // GPIO值
 static uint8_t s_Gpioflag = 0;                          // GPIO标志
+static uint8_t s_SPIMode = 1;                          // SPI模式，1全双工，0半双工
 
 // CH347函数指针
 static PFN_CH347OpenDevice pfn_CH347OpenDevice = NULL;
@@ -292,7 +293,7 @@ int luat_ch347_i2c_close(int id) {
 
 // ============== SPI ==============
 
-int luat_ch347_spi_setup(int id, int CPHA, int CPOL, int dataw, int bit_dict, int banrate, int cs) {
+int luat_ch347_spi_setup(int id, int CPHA, int CPOL, int dataw, int bit_dict, int banrate, int cs, int mode) {
 	(void)bit_dict; (void)cs; // 避免未使用参数警告
 #ifdef _WIN32
 	if (id == 0) {
@@ -303,6 +304,8 @@ int luat_ch347_spi_setup(int id, int CPHA, int CPOL, int dataw, int bit_dict, in
 		(void)HwVer; (void)Frequency; // 避免未使用变量警告
 		uint64_t SpiFrequency = 0;
 		uint8_t SpiDatabits = 0;
+
+		s_SPIMode = mode;
 
 		SpiCfg.iMode = 3;
 		SpiCfg.iClock = 1;
@@ -353,9 +356,22 @@ int luat_ch347_spi_transfer(int spi_id, const char* send_buf, size_t send_length
 		UCHAR ChipSelect = 0x80;
 
 		if (send_length > 0 && recv_length > 0) {
-			memcpy(recv_buf, send_buf, send_length);
-			RetVal = pfn_CH347StreamSPI4(g_ch3470_SpiI2cGpioDevIndex, ChipSelect, send_length, recv_buf);
-			return RetVal ? (int)recv_length : 0;
+			if(s_SPIMode) {
+				// 全双工
+				memcpy(recv_buf, send_buf, send_length);
+				RetVal = pfn_CH347StreamSPI4(g_ch3470_SpiI2cGpioDevIndex, ChipSelect, send_length, recv_buf);
+				return RetVal ? (int)recv_length : 0;
+			} else {
+				// 半双工
+				if (send_length > 0) {
+					RetVal = pfn_CH347SPI_Write(g_ch3470_SpiI2cGpioDevIndex, ChipSelect, send_length, 512, (PVOID)send_buf);
+				}
+				if (recv_length > 0) {
+					ULONG actual_length = recv_length;
+					RetVal = pfn_CH347SPI_Read(g_ch3470_SpiI2cGpioDevIndex, ChipSelect, 0, &actual_length, recv_buf);
+					return RetVal ? (int)actual_length : 0;
+				}
+			}
 		} else if (send_length > 0) {
 			RetVal = pfn_CH347SPI_Write(g_ch3470_SpiI2cGpioDevIndex, ChipSelect, send_length, 512, (PVOID)send_buf);
 			return RetVal ? (int)send_length : 0;
