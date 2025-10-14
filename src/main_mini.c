@@ -74,6 +74,12 @@ static void timer_lwip(uv_timer_t *handle);
 int main(int argc, char** argv) {
     cmdline_argc = argc;
     cmdline_argv = argv;
+    
+#ifdef LUAT_USE_WINDOWS
+    // Windows平台下自动设置控制台编码
+    extern void luat_console_auto_encoding(void);
+    luat_console_auto_encoding();
+#endif
 
     main_loop = malloc(sizeof(uv_loop_t));
     // uv_replace_allocator(luat_heap_malloc, luat_heap_realloc, luat_heap_calloc, luat_heap_free);
