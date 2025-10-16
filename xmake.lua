@@ -35,9 +35,9 @@ if os.getenv("LUAT_USE_GUI") == "y" then
     add_defines("LUAT_USE_GUI=1")
     add_requires("libsdl2")
     add_packages("libsdl2")
-    -- freetype 用于 PC 端 gtfont 仿真渲染
-    add_requires("freetype")
-    add_packages("freetype")
+    -- freetype 用于 PC 端 gtfont 仿真渲染（使用本地freetype）
+    add_includedirs("freetype/include", {public = true})
+    add_defines("FT2_BUILD_LIBRARY")
     -- add_requires("libsdl 2.26.2")
     -- add_packages("libsdl 2.26.2")
 end
@@ -291,6 +291,47 @@ target("luatos-lua")
         add_files("ui/*.c")
         add_defines("U8G2_USE_LARGE_FONTS=1")
 
+        -- freetype 本地源文件编译
+        -- 基础模块
+        add_files("freetype/src/base/ftbase.c")
+        add_files("freetype/src/base/ftinit.c")
+        add_files("freetype/src/base/ftbitmap.c")
+        add_files("freetype/src/base/ftbbox.c")
+        add_files("freetype/src/base/ftglyph.c")
+        add_files("freetype/src/base/ftstroke.c")
+        add_files("freetype/src/base/ftsynth.c")
+        add_files("freetype/src/base/ftmm.c")
+        -- 字体驱动模块
+        add_files("freetype/src/truetype/truetype.c")
+        add_files("freetype/src/cff/cff.c")
+        add_files("freetype/src/sfnt/sfnt.c")
+        add_files("freetype/src/type1/type1.c")
+        add_files("freetype/src/cid/type1cid.c")
+        add_files("freetype/src/pfr/pfr.c")
+        add_files("freetype/src/type42/type42.c")
+        add_files("freetype/src/winfonts/winfnt.c")
+        add_files("freetype/src/pcf/pcf.c")
+        add_files("freetype/src/bdf/bdf.c")
+        -- 渲染和辅助模块
+        add_files("freetype/src/smooth/smooth.c")
+        add_files("freetype/src/raster/raster.c")
+        add_files("freetype/src/sdf/sdf.c")
+        add_files("freetype/src/svg/svg.c")
+        add_files("freetype/src/autofit/autofit.c")
+        add_files("freetype/src/pshinter/pshinter.c")
+        add_files("freetype/src/psaux/psaux.c")
+        add_files("freetype/src/psnames/psnames.c")
+        add_files("freetype/src/gzip/ftgzip.c")
+        add_files("freetype/src/lzw/ftlzw.c")
+        -- 平台相关文件
+        if is_host("windows") then
+            add_files("freetype/builds/windows/ftsystem.c")
+            add_files("freetype/builds/windows/ftdebug.c")
+        else
+            add_files("freetype/builds/unix/ftsystem.c")
+            add_files("freetype/src/base/ftdebug.c")
+        end
+
         -- sdl2
         add_includedirs(luatos.."components/ui/sdl2")
         add_files(luatos.."components/ui/sdl2/*.c")
@@ -325,6 +366,11 @@ target("luatos-lua")
         add_includedirs(luatos.."components/gtfont")
         add_includedirs(luatos.."components/eink")
         add_files(luatos.."components/gtfont/*.c")
+        
+        -- freetypefont component
+        add_includedirs(luatos.."components/freetypefont/inc")
+        add_files(luatos.."components/freetypefont/src/*.c")
+        add_files(luatos.."components/freetypefont/binding/*.c")
 
         -- airui
         add_includedirs(luatos_exts.."/airui/include")

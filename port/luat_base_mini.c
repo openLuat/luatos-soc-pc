@@ -153,6 +153,9 @@ static const luaL_Reg loadedlibs[] = {
 #ifdef LUAT_USE_GTFONT
   {"gtfont", luaopen_gtfont},
 #endif
+#ifdef LUAT_USE_FREETYPEFONT
+  {"freetypefont", luaopen_freetypefont},
+#endif
 #ifdef LUAT_USE_TP
   {"tp",     luaopen_tp},
 #endif
