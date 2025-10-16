@@ -1,33 +1,29 @@
 #include "luat_base.h"
 #include "luat_fskv.h"
 #include "luat_malloc.h"
-#include "luat_msgbus.h"
-#include "luat_sfd.h"
 
-#undef LUAT_LOG_TAG
 #define LUAT_LOG_TAG "fskv"
 #include "luat_log.h"
 
 #include "lfs.h"
 
+#define LFS_BLOCK_DEVICE_READ_SIZE (256)
+#define LFS_BLOCK_DEVICE_PROG_SIZE (256)
+#define LFS_BLOCK_DEVICE_CACHE_SIZE (256)
+#define LFS_BLOCK_DEVICE_ERASE_SIZE (4096) // one sector 4KB
+#define LFS_BLOCK_DEVICE_TOTOAL_SIZE (64 * 1024)
+#define LFS_BLOCK_DEVICE_LOOK_AHEAD (16)
+
+
 static lfs_t fskv_lfs;
 static struct lfs_config fskv_lfs_conf;
 
-static char fskv_buff[64*1024];
-
+static char fskv_buff[LFS_BLOCK_DEVICE_TOTOAL_SIZE];
 // Read a block
 static int block_device_read(const struct lfs_config *cfg, lfs_block_t block,
                              lfs_off_t off, void *buffer, lfs_size_t size)
 {
-    // sfd_drv_t* drv = cfg->context;
-    // int ret = luat_sfd_read(drv, buffer, block * LFS_BLOCK_DEVICE_ERASE_SIZE + off, size);
-    // LLOGD("sfd read %d %d %d %d", block, off, size, ret);
-    // if (ret >= 0) {
-    //     // LLOGD("block_device_read return LFS_ERR_OK");
-    //     return LFS_ERR_OK;
-    // }
-    // LLOGD("block_device_read return LFS_ERR_IO");
-    // return LFS_ERR_IO;
+    (void)cfg;
     memcpy(buffer, fskv_buff + (block * 4096 + off), size);
     return LFS_ERR_OK;
 }
@@ -38,15 +34,7 @@ static int block_device_read(const struct lfs_config *cfg, lfs_block_t block,
 static int block_device_prog(const struct lfs_config *cfg, lfs_block_t block,
                              lfs_off_t off, const void *buffer, lfs_size_t size)
 {
-    // sfd_drv_t* drv = cfg->context;
-    // int ret = luat_sfd_write(drv, buffer, block * LFS_BLOCK_DEVICE_ERASE_SIZE + off, size);
-    // // LLOGD("sfd write %d %d %d %d", block, off, size, ret);
-    // if (ret >= 0) {
-    //     // LLOGD("block_device_prog return LFS_ERR_OK");
-    //     return LFS_ERR_OK;
-    // }
-    // LLOGD("block_device_prog return LFS_ERR_IO");
-    // return LFS_ERR_IO;
+    (void)cfg;
     memcpy(fskv_buff + (block * 4096 + off), buffer, size);
     return LFS_ERR_OK;
 }
@@ -57,10 +45,7 @@ static int block_device_prog(const struct lfs_config *cfg, lfs_block_t block,
 // state of an erased block is undefined.
 static int block_device_erase(const struct lfs_config *cfg, lfs_block_t block)
 {
-    // sfd_drv_t* drv = cfg->context;
-    // int ret = luat_sfd_erase(drv, block * LFS_BLOCK_DEVICE_ERASE_SIZE, LFS_BLOCK_DEVICE_ERASE_SIZE);
-    // // LLOGD("sfd erase %d %d", block, ret);
-    // (void)ret;
+    (void)cfg;
     memset(fskv_buff + (block * 4096), 0, 4096);
     return 0;
 }
@@ -68,6 +53,7 @@ static int block_device_erase(const struct lfs_config *cfg, lfs_block_t block)
 // Sync the block device
 static int block_device_sync(const struct lfs_config *cfg)
 {
+    (void)cfg;
     return 0;
 }
 
@@ -87,11 +73,10 @@ int luat_fskv_init(void)
     fskv_lfs_conf.read_size = LFS_BLOCK_DEVICE_CACHE_SIZE;
     fskv_lfs_conf.cache_size = LFS_BLOCK_DEVICE_CACHE_SIZE;
     fskv_lfs_conf.prog_size = LFS_BLOCK_DEVICE_PROG_SIZE;
-    fskv_lfs_conf.cache_size = LFS_BLOCK_DEVICE_CACHE_SIZE;
     fskv_lfs_conf.lookahead_size = LFS_BLOCK_DEVICE_LOOK_AHEAD;
-    fskv_lfs_conf.lookahead_buffer = luat_heap_malloc(LFS_BLOCK_DEVICE_LOOK_AHEAD);
-    fskv_lfs_conf.prog_buffer = luat_heap_malloc(LFS_BLOCK_DEVICE_ERASE_SIZE);
-    fskv_lfs_conf.read_buffer = luat_heap_malloc(LFS_BLOCK_DEVICE_ERASE_SIZE);
+    fskv_lfs_conf.lookahead_buffer = luat_heap_malloc(4096);
+    fskv_lfs_conf.prog_buffer = luat_heap_malloc(4096);
+    fskv_lfs_conf.read_buffer = luat_heap_malloc(4096);
     fskv_lfs_conf.context = NULL;
 
     ret = lfs_mount(&fskv_lfs, &fskv_lfs_conf);
