@@ -191,7 +191,7 @@ target("luatos-lua")
     
     --mobile
     add_includedirs(luatos.."components/mobile")
-    add_files(luatos.."components/mobile/luat_lib_mobile.c")
+    add_files(luatos.."components/mobile/*.c")
 
     ----------------------------------------------------------------------
     -- 网络相关

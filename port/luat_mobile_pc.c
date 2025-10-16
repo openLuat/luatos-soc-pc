@@ -282,14 +282,14 @@ uint32_t luat_mobile_sim_write_counter(void)
 {
     return 0;
 }
-int luat_mobile_get_isp_from_plmn(uint16_t mcc, uint8_t mnc)
-{
-    return 0;
-}
-int luat_mobile_get_plmn_from_imsi(char *imsi, uint16_t *mcc, uint8_t *mnc)
-{
-    return 0;
-}
+// int luat_mobile_get_isp_from_plmn(uint16_t mcc, uint8_t mnc)
+// {
+//     return 0;
+// }
+// int luat_mobile_get_plmn_from_imsi(char *imsi, uint16_t *mcc, uint8_t *mnc)
+// {
+//     return 0;
+// }
 void luat_mobile_get_last_call_num(char *buf, uint8_t buf_len)
 {
 
@@ -355,26 +355,26 @@ void luat_mobile_data_ip_mode(uint8_t on_off)
 
 }
 
-void luat_mobile_init_auto_apn_by_plmn(void)
-{
+// void luat_mobile_init_auto_apn_by_plmn(void)
+// {
     
-}
+// }
 void luat_mobile_init_auto_apn(void)
 {
 
 }
-void luat_mobile_add_auto_apn_item(uint16_t mcc, uint16_t mnc, uint8_t ip_type, uint8_t protocol, char *name, uint8_t name_len, char *user, uint8_t user_len, char *password, uint8_t password_len, uint8_t task_safe)
-{
+// void luat_mobile_add_auto_apn_item(uint16_t mcc, uint16_t mnc, uint8_t ip_type, uint8_t protocol, char *name, uint8_t name_len, char *user, uint8_t user_len, char *password, uint8_t password_len, uint8_t task_safe)
+// {
     
-}
-int luat_mobile_find_apn_by_mcc_mnc(uint16_t mcc, uint16_t mnc, apn_info_t *apn)
-{
-    return 0;
-}
-void luat_mobile_print_apn_by_mcc_mnc(uint16_t mcc, uint16_t mnc)
-{   
+// }
+// int luat_mobile_find_apn_by_mcc_mnc(uint16_t mcc, uint16_t mnc, apn_info_t *apn)
+// {
+//     return 0;
+// }
+// void luat_mobile_print_apn_by_mcc_mnc(uint16_t mcc, uint16_t mnc)
+// {   
 
-}
+// }
 
 
 // 补充一个空实现

@@ -256,3 +256,7 @@ void free_uv_handle(void* ptr) {
     return;
   uv_close((uv_handle_t*)ptr, on_free);
 }
+
+void luat_rtos_task_suspend_all(void) {}
+
+void luat_rtos_task_resume_all(void) {}
