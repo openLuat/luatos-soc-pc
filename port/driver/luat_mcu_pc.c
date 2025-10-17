@@ -5,6 +5,11 @@
 #include "luat_msgbus.h"
 #include "luat_malloc.h"
 #include "luat_mcu.h"
+#include <stdlib.h>
+#include <string.h>
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 
 #include "luat_pcconf.h"
 
@@ -23,6 +28,33 @@ int luat_mcu_get_clk(void) {
 extern uv_timespec64_t boot_ts;
 
 const char* luat_mcu_unique_id(size_t* t) {
+    FILE *fp = NULL;
+    char buf[128] = {0};
+// 使用主板smBIOS UUID作为唯一ID
+#ifdef _MSC_VER
+    fp = _popen("wmic csproduct get UUID", "r");
+#else
+    fp = popen("wmic csproduct get UUID", "r");
+#endif
+    if (fp) {
+         while(1) {
+            fgets(buf, sizeof(buf), fp);
+
+            if (strstr(buf, "UUID") == NULL) {
+                size_t len = strlen(buf);
+                g_pcconf.mcu_unique_id_len = len-2; // 去掉\r\n
+                strncpy(g_pcconf.mcu_unique_id, buf, sizeof(g_pcconf.mcu_unique_id) - 1);
+                g_pcconf.mcu_unique_id[g_pcconf.mcu_unique_id_len] = 0;
+                break;
+            }
+        }
+    }
+
+#ifdef _MSC_VER
+    _pclose(fp);
+#else
+    pclose(fp);
+#endif
     *t = g_pcconf.mcu_unique_id_len;
     return (const char*)g_pcconf.mcu_unique_id;
 }
