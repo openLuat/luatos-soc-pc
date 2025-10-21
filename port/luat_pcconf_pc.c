@@ -25,8 +25,8 @@ void luat_pcconf_init(void) {
     
     #endif
 
-    memcpy(g_pcconf.mcu_unique_id, "LuatOS@PC", strlen("LuatOS@PC"));
-    g_pcconf.mcu_unique_id_len = strlen("LuatOS@PC");
+    // memcpy(g_pcconf.mcu_unique_id, "LuatOS@PC", strlen("LuatOS@PC"));
+    // g_pcconf.mcu_unique_id_len = strlen("LuatOS@PC");
     
     #ifdef LUA_USE_WINDOWS
     // LLOGD("执行uart_win32初始化");

@@ -5,6 +5,7 @@
 #include "luat_msgbus.h"
 #include "luat_malloc.h"
 #include "luat_mcu.h"
+#include "luat_str.h"
 #include <stdlib.h>
 #include <string.h>
 #ifndef _MSC_VER
@@ -19,6 +20,7 @@
 extern luat_pcconf_t g_pcconf;
 
 int luat_mcu_set_clk(size_t mhz) {
+    (void)mhz;
     return 0;
 }
 int luat_mcu_get_clk(void) {
@@ -30,6 +32,12 @@ extern uv_timespec64_t boot_ts;
 const char* luat_mcu_unique_id(size_t* t) {
     FILE *fp = NULL;
     char buf[128] = {0};
+    char buf2[128] = {0};
+    if (g_pcconf.mcu_unique_id_len) {
+        *t = g_pcconf.mcu_unique_id_len;
+        return (const char*)g_pcconf.mcu_unique_id;
+    }
+
 // 使用主板smBIOS UUID作为唯一ID
 #ifdef _MSC_VER
     fp = _popen("wmic csproduct get UUID", "r");
@@ -42,8 +50,16 @@ const char* luat_mcu_unique_id(size_t* t) {
 
             if (strstr(buf, "UUID") == NULL) {
                 size_t len = strlen(buf);
-                g_pcconf.mcu_unique_id_len = len-2; // 去掉\r\n
-                strncpy(g_pcconf.mcu_unique_id, buf, sizeof(g_pcconf.mcu_unique_id) - 1);
+                size_t tmpi = 0;
+                for (size_t i = 0; i < len && i < 64; i++)
+                {
+                    if (buf[i] == '-' || buf[i] == ' ' || buf[i] == '\r' || buf[i] == '\n') {
+                        continue;
+                    }
+                    buf2[tmpi++] = buf[i];
+                }
+                luat_str_fromhex(buf2, tmpi, g_pcconf.mcu_unique_id);
+                g_pcconf.mcu_unique_id_len = tmpi / 2;
                 g_pcconf.mcu_unique_id[g_pcconf.mcu_unique_id_len] = 0;
                 break;
             }
@@ -81,17 +97,36 @@ uint64_t luat_mcu_tick64_ms(void) {
 }
 
 void luat_mcu_set_clk_source(uint8_t source_main, uint8_t source_32k, uint32_t delay) {
-    // nop
+    (void)source_main;
+    (void)source_32k;
+    (void)delay;
 }
 
 void luat_mcu_iomux_ctrl(uint8_t type, uint8_t sn, int pad_index, uint8_t alt, uint8_t is_input) {
-    // nop
+    (void)type;
+    (void)sn;
+    (void)pad_index;
+    (void)alt;
+    (void)is_input;
 }
 
 void luat_mcu_set_hardfault_mode(int mode) {
-    // nop
+    (void)mode;
 }
 
-void luat_mcu_xtal_ref_output(uint8_t main_enable, uint8_t slow_32k_enable) {;}
-int luat_uart_pre_setup(int uart_id, uint8_t use_alt_type){return -1;}
-int luat_i2c_set_iomux(int id, uint8_t value){return -1;}
+void luat_mcu_xtal_ref_output(uint8_t main_enable, uint8_t slow_32k_enable) {
+    (void)main_enable;
+    (void)slow_32k_enable;
+}
+
+int luat_uart_pre_setup(int uart_id, uint8_t use_alt_type){
+    (void)uart_id;
+    (void)use_alt_type;
+    return 0;
+}
+
+int luat_i2c_set_iomux(int id, uint8_t value){
+    (void)id;
+    (void)value;
+    return 0;
+}

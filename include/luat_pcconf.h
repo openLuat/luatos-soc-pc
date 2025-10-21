@@ -4,7 +4,7 @@
 typedef struct luat_pcconf
 {
     // MCU
-    char   mcu_unique_id[32];
+    char   mcu_unique_id[64];
     size_t mcu_unique_id_len;
     size_t mcu_mhz;
 
