@@ -10,11 +10,22 @@
 #define LUAT_LOG_TAG "vmheap"
 #include "luat_log.h"
 
+
+#include "luat_mem.h"
+#include "luat_bget.h"
+
+static void* psram_ptr;
+static luat_bget_t psram_bget;
+
+static void* sram_ptr;
+static luat_bget_t sram_bget;
+
 //------------------------------------------------
 //  管理系统内存
 
 void* luat_heap_malloc(size_t len) {
-    return malloc(len);
+    // 改成从sram_bget分配
+    return luat_bgetz(&sram_bget, len);
 }
 
 void luat_heap_free(void* ptr) {
@@ -22,11 +33,12 @@ void luat_heap_free(void* ptr) {
         printf("luat_heap_free: ptr is NULL, return\n");
         return;
     }
-    free(ptr);
+    // 还得判断ptr的地址范围,防御不合法的free
+    luat_brel(&sram_bget, ptr);
 }
 
 void* luat_heap_realloc(void* ptr, size_t len) {
-    return realloc(ptr, len);
+    return luat_bgetr(&sram_bget, ptr, len);
 }
 
 void* luat_heap_calloc(size_t count, size_t _size) {
@@ -38,7 +50,7 @@ void* luat_heap_calloc(size_t count, size_t _size) {
 }
 
 void* luat_heap_zalloc(size_t _size) {
-    void* ptr = malloc(_size);
+    void* ptr = luat_heap_malloc(_size);
     if (ptr != NULL) {
         memset(ptr, 0, _size);
     }
@@ -94,23 +106,25 @@ void luat_meminfo_luavm(size_t *total, size_t *used, size_t *max_used) {
 }
 
 void luat_meminfo_sys(size_t *total, size_t *used, size_t *max_used) {
-    // TODO 貌似真实不了-_-
-	*used = 128*1024;
-	*max_used = 64*1024;
-    *total = 246*1024;
+    long curalloc, totfree, maxfree;
+    unsigned long nget, nrel;
+    luat_bstats(&sram_bget, &curalloc, &totfree, &maxfree, &nget, &nrel);
+    *used = curalloc;
+    *max_used = maxfree;
+    *total = curalloc + totfree;
 }
 
-#include "luat_mem.h"
-#include "luat_bget.h"
-
-static void* psram_ptr;
-static luat_bget_t psram_bget;
 
 void luat_heap_opt_init(LUAT_HEAP_TYPE_E type){
     if (type == LUAT_HEAP_PSRAM && psram_ptr == NULL) {
         psram_ptr = malloc(2*1024*1024);
         luat_bget_init(&psram_bget);
         luat_bpool(&psram_bget, psram_ptr, 2*1024*1024);
+    }
+    else if (type == LUAT_HEAP_SRAM && sram_ptr == NULL) {
+        sram_ptr = malloc(1024*1024);
+        luat_bget_init(&sram_bget);
+        luat_bpool(&sram_bget, sram_ptr, 1024*1024);
     }
 }
 
