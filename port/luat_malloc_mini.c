@@ -33,6 +33,11 @@ void luat_heap_free(void* ptr) {
         printf("luat_heap_free: ptr is NULL, return\n");
         return;
     }
+    uint32_t addr = (uint32_t)ptr;
+    if (addr < (uint32_t)sram_ptr || addr >= ((uint32_t)sram_ptr + 1024*1024)) {
+        printf("luat_heap_free: ptr %p out of sram range, return\n", ptr);
+        return;
+    }
     // 还得判断ptr的地址范围,防御不合法的free
     luat_brel(&sram_bget, ptr);
 }
