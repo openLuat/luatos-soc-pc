@@ -74,6 +74,8 @@ static void timer_lwip(uv_timer_t *handle);
 int main(int argc, char** argv) {
     cmdline_argc = argc;
     cmdline_argv = argv;
+
+    luat_heap_opt_init(LUAT_HEAP_SRAM);
     
 #ifdef LUAT_USE_WINDOWS
     // Windows平台下自动设置控制台编码
