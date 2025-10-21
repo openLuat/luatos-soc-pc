@@ -1,3 +1,6 @@
+#include "luat_base.h"
+
+#ifdef LUAT_USE_WINDOWS
 #include <windows.h>
 #include <stdio.h>
 #include <string.h>
@@ -96,3 +99,4 @@ void luat_console_auto_encoding(void) {
     mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     SetConsoleMode(hStdout, mode);
 }
+#endif

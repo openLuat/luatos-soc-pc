@@ -3,7 +3,9 @@
 #include "luat_gpio.h"
 #include "luat_msgbus.h"
 #include "luat_spi.h"
+#ifdef LUAT_USE_WINDOWS
 #include "luat_ch347_pc.h"
+#endif
 
 // 模拟SPI在win32下的实现
 // TODO 当需要返回数据时, 调用lua方法获取需要返回的数据
@@ -39,6 +41,7 @@ int luat_spi_setup(luat_spi_t* spi) {
     if (spi->id < 0 || spi->id >= LUAT_WIN32_SPI_COUNT) {
         return -1;
     }
+    #ifdef LUAT_USE_WINDOWS
     if(!g_ch3470_DevIsOpened)
         luat_load_ch347(0);
     if(g_ch3470_DevIsOpened) {
@@ -49,6 +52,7 @@ int luat_spi_setup(luat_spi_t* spi) {
             return 0;
         }
     }
+    #endif
     memcpy(&win32spis[spi->id].spi, spi, sizeof(luat_spi_t));
     win32spis[spi->id].open = 1;
     return 0;
@@ -68,10 +72,11 @@ int luat_spi_transfer(int spi_id, const char* send_buf, size_t send_length, char
     }
     if (win32spis[spi_id].open == 0)
         return -1;
+    #ifdef LUAT_USE_WINDOWS
     if(g_ch3470_DevIsOpened) {
         return luat_ch347_spi_transfer(spi_id, send_buf, send_length, recv_buf, recv_length);
     }
-
+    #endif
     memset(recv_buf, 0, recv_length);
     return recv_length;
 }
@@ -81,11 +86,12 @@ int luat_spi_recv(int spi_id, char* recv_buf, size_t length) {
         return -1;
     }
     if (win32spis[spi_id].open == 0)
-        return -1;
     memset(recv_buf, 0, length);
+    #ifdef LUAT_USE_WINDOWS
     if(g_ch3470_DevIsOpened) {
         return luat_ch347_spi_recv(spi_id, recv_buf, length);
     }
+    #endif
     return length;
 }
 //发SPI数据，返回发送字节数
@@ -95,9 +101,11 @@ int luat_spi_send(int spi_id, const char* send_buf, size_t length) {
     }
     if (win32spis[spi_id].open == 0)
         return -1;
+    #ifdef LUAT_USE_WINDOWS
     if(g_ch3470_DevIsOpened) {
         return luat_ch347_spi_transfer(spi_id, send_buf, length, NULL, 0);
     }
+    #endif
     return length;
 }
 

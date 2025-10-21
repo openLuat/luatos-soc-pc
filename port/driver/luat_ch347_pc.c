@@ -1,4 +1,5 @@
 #include "luat_base.h"
+#ifdef LUAT_USE_WINDOWS
 #include "luat_ch347_pc.h"
 
 #include <stdio.h>
@@ -509,3 +510,4 @@ void luat_ch347_gpio_close(int pin) {
 #endif
 }
 
+#endif
