@@ -34,6 +34,8 @@ int luat_mobile_get_imei(int sim_id, char* buff, size_t buf_len)
 
         num = (num % 900000000ULL) + 100000000ULL;
         snprintf(buff, buf_len, "86228905%llu", num);
+        buff[15] = 0x00; //确保结束符
+        // TODO imei的最后一位是校验位,这里没有计算
         return 1;
     }
 

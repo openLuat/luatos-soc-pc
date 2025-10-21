@@ -5,7 +5,7 @@ sys.taskInit(function()
     for i = 1, 3 do
         local id = mcu.unique_id()
         print("MCU Unique ID:", id:toHex())
-        print("MCU Unique ID:", mobile.imei())
+        print("MCU Unique ID:", mobile.imei(), #mobile.imei())
         sys.wait(1000)
     end
     os.exit(0)
