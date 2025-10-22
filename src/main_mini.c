@@ -22,6 +22,14 @@ uv_timer_t lvgl_timer;
 #include "lvgl.h"
 #endif
 
+extern char *luadb_ptr;
+extern const uint8_t luadb_mod[];
+
+// 如果模拟器luadb_mod 的前32bytes为luatdb_secret，说明可能被luatools修改过
+// 这串数据实际上是"FFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"的sha256值
+const uint8_t luatdb_secret[] = {0xa8, 0xe4, 0x9c, 0x1a, 0x57, 0x4b, 0x00, 0x2f, 0x4c, 0xc4, 0x74, 0xb8, 0x69, 0x1d, 0x90, 0xc1, 0x84, 0x24, 0x16, 0x11, 0x79, 0xa2, 0xd0, 0x4b, 0xfc, 0xf5, 0x14, 0x5d, 0xdd, 0x54, 0xdd, 0x55};
+
+
 #define LUAT_HEAP_SIZE (2*1024*1024)
 uint8_t luavm_heap[LUAT_HEAP_SIZE] = {0};
 
@@ -102,11 +110,23 @@ int main(int argc, char** argv) {
     luat_fs_init();
     luat_network_init();
 
-    
-    int ret = luat_cmd_parse(cmdline_argc, cmdline_argv);
-    if (ret) {
-        return ret;
+    // 如果luadb_mod被修改过，那么直接以luadb_mod偏移32bytes作为luadb
+
+    if(!memcmp(luatdb_secret, luadb_mod, 32))
+    {
+        LLOGI("luadb mod init");
+        luadb_ptr = luadb_mod + 32;
+        cmdline_argc = 2;
     }
+    else
+    {
+        int ret = luat_cmd_parse(cmdline_argc, cmdline_argv);
+        if (ret) {
+            return ret;
+        }
+    }
+    
+
 
     #ifdef LUAT_USE_LVGL
     uv_timer_init(main_loop, &lvgl_timer);
