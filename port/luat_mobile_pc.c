@@ -8,6 +8,8 @@
 
 // #define LUAT_LOG_TAG "mobile"
 
+static uint8_t generate_imei_check_digit(const char* imei);
+
 int luat_mobile_get_imei(int sim_id, char* buff, size_t buf_len)
 {
     size_t mcu_uuid_len = 0;
@@ -35,6 +37,7 @@ int luat_mobile_get_imei(int sim_id, char* buff, size_t buf_len)
         num = (num % 900000000ULL) + 100000000ULL;
         snprintf(buff, buf_len, "86228905%llu", num);
         buff[15] = 0x00; //确保结束符
+        buff[14] = '0' + generate_imei_check_digit((const char*)buff);
         // TODO imei的最后一位是校验位,这里没有计算
         return 1;
     }
@@ -415,4 +418,39 @@ void luat_mobile_rrc_get_idle_meas_threshold(int16_t *sIntraSearchP, int16_t *sN
 	*sNonIntraSearchP = 0;
 	*sIntraSearchQ = 0;
 	*sNonIntraSearchQ = 0;
+}
+
+// 辅助函数
+// 计算imei的校验位
+#include <stdint.h>
+#include <ctype.h>
+
+static uint8_t generate_imei_check_digit(const char* imei) {
+    int sum = 0;
+    
+    // 遍历前14位数字
+    for (int i = 0; i < 14; i++) {
+        // 检查字符是否为数字
+        if (!isdigit(imei[i])) {
+            return 0xFF; // 返回错误值
+        }
+        
+        int digit = imei[i] - '0';
+        
+        // 从右向左，偶数位置（从0开始计数）需要特殊处理
+        if ((13 - i) % 2 == 1) {
+            digit *= 2;
+            // 如果结果大于9，则将各位数字相加
+            if (digit > 9) {
+                digit = digit / 10 + digit % 10;
+            }
+        }
+        
+        sum += digit;
+    }
+    
+    // 计算校验位：使得总和能被10整除的数字
+    uint8_t check_digit = (10 - (sum % 10)) % 10;
+    
+    return check_digit;
 }
