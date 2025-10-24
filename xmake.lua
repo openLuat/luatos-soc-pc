@@ -326,10 +326,10 @@ target("luatos-lua")
         add_includedirs(luatos.."components/eink")
         add_files(luatos.."components/gtfont/*.c")
         
-        -- freetypefont component
-        add_includedirs(luatos.."components/freetypefont/inc")
-        add_files(luatos.."components/freetypefont/src/*.c")
-        add_files(luatos.."components/freetypefont/binding/*.c")
+        -- hzfont component
+        add_includedirs(luatos.."components/hzfont/inc")
+        add_files(luatos.."components/hzfont/src/*.c")
+        add_files(luatos.."components/hzfont/binding/*.c")
 
         -- airui
         add_includedirs(luatos_exts.."/airui/include")
