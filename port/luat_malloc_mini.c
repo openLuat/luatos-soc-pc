@@ -25,6 +25,9 @@ static luat_bget_t sram_bget;
 
 void* luat_heap_malloc(size_t len) {
     // 改成从sram_bget分配
+    if (len > 2*1024*1024) {
+        LLOGW("luat_heap_malloc: len=%d too large\n", len);
+    }
     return luat_bgetz(&sram_bget, len);
 }
 
