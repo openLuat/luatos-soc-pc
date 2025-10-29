@@ -138,7 +138,7 @@
 #define LUAT_USE_GTFONT_UTF8 1
 // hzfont 字体库支持
 #define LUAT_USE_HZFONT 1
-#define USE_HZFONT_BUILTIN_TTF 1
+#define LUAT_CONF_USE_HZFONT_BUILTIN_TTF 1
 // EINK 是墨水屏
 // #define LUAT_USE_EINK
 
