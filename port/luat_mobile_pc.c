@@ -1,13 +1,43 @@
 #include "luat_base.h"
 #include "luat_sys.h"
 #include "luat_mobile.h"
+#include "luat_str.h"
+#include "luat_mcu.h"
+#include "luat_crypto.h"
 #include "lwip/ip_addr.h"
 
 // #define LUAT_LOG_TAG "mobile"
 
 int luat_mobile_get_imei(int sim_id, char* buff, size_t buf_len)
 {
-    return 0;
+    size_t mcu_uuid_len = 0;
+    char md5buff[32] = {0};
+    char hexbuff[33] = {0};
+    const char* mcu_uuid = luat_mcu_unique_id(&mcu_uuid_len);
+    if(mcu_uuid_len > 0) {
+        luat_crypto_md("MD5", mcu_uuid, mcu_uuid_len, md5buff, NULL, 0);
+        luat_str_tohex(md5buff, 16, hexbuff);
+
+        // 从MD5的十六进制字符串中提取数字，生成9-10位的十进制字符串
+        // 取前8个字节(16个十六进制字符)转换为64位整数，再取模得到10位数字
+        unsigned long long num = 0;
+        for (int i = 0; i < 16 && hexbuff[i]; i++) {
+            num = num * 16;
+            if (hexbuff[i] >= '0' && hexbuff[i] <= '9') {
+                num += hexbuff[i] - '0';
+            } else if (hexbuff[i] >= 'a' && hexbuff[i] <= 'f') {
+                num += hexbuff[i] - 'a' + 10;
+            } else if (hexbuff[i] >= 'A' && hexbuff[i] <= 'F') {
+                num += hexbuff[i] - 'A' + 10;
+            }
+        }
+
+        num = (num % 900000000ULL) + 100000000ULL;
+        snprintf(buff, buf_len, "86228905%llu", num);
+        return 1;
+    }
+
+    return -1;
 }
 int luat_mobile_get_sn(char* buff, size_t buf_len)
 {
@@ -282,14 +312,14 @@ uint32_t luat_mobile_sim_write_counter(void)
 {
     return 0;
 }
-int luat_mobile_get_isp_from_plmn(uint16_t mcc, uint8_t mnc)
-{
-    return 0;
-}
-int luat_mobile_get_plmn_from_imsi(char *imsi, uint16_t *mcc, uint8_t *mnc)
-{
-    return 0;
-}
+// int luat_mobile_get_isp_from_plmn(uint16_t mcc, uint8_t mnc)
+// {
+//     return 0;
+// }
+// int luat_mobile_get_plmn_from_imsi(char *imsi, uint16_t *mcc, uint8_t *mnc)
+// {
+//     return 0;
+// }
 void luat_mobile_get_last_call_num(char *buf, uint8_t buf_len)
 {
 
@@ -355,26 +385,26 @@ void luat_mobile_data_ip_mode(uint8_t on_off)
 
 }
 
-void luat_mobile_init_auto_apn_by_plmn(void)
-{
+// void luat_mobile_init_auto_apn_by_plmn(void)
+// {
     
-}
+// }
 void luat_mobile_init_auto_apn(void)
 {
 
 }
-void luat_mobile_add_auto_apn_item(uint16_t mcc, uint16_t mnc, uint8_t ip_type, uint8_t protocol, char *name, uint8_t name_len, char *user, uint8_t user_len, char *password, uint8_t password_len, uint8_t task_safe)
-{
+// void luat_mobile_add_auto_apn_item(uint16_t mcc, uint16_t mnc, uint8_t ip_type, uint8_t protocol, char *name, uint8_t name_len, char *user, uint8_t user_len, char *password, uint8_t password_len, uint8_t task_safe)
+// {
     
-}
-int luat_mobile_find_apn_by_mcc_mnc(uint16_t mcc, uint16_t mnc, apn_info_t *apn)
-{
-    return 0;
-}
-void luat_mobile_print_apn_by_mcc_mnc(uint16_t mcc, uint16_t mnc)
-{   
+// }
+// int luat_mobile_find_apn_by_mcc_mnc(uint16_t mcc, uint16_t mnc, apn_info_t *apn)
+// {
+//     return 0;
+// }
+// void luat_mobile_print_apn_by_mcc_mnc(uint16_t mcc, uint16_t mnc)
+// {   
 
-}
+// }
 
 
 // 补充一个空实现
