@@ -5,6 +5,7 @@
 #include "luat_malloc.h"
 #include <stdlib.h>
 #include "luat_mock.h"
+#include "luat_libs.h"
 
 #define LUAT_LOG_TAG "main"
 #include "luat_log.h"
@@ -35,6 +36,9 @@ static const luaL_Reg loadedlibs[] = {
 #endif
 #ifdef LUAT_USE_SPI
   {"spi",     luaopen_spi},               // SPI操作
+#endif
+#ifdef LUAT_USE_I2S
+  {"i2s",     luaopen_i2s},               // I2S操作
 #endif
 #ifdef LUAT_USE_ADC
   {"adc",     luaopen_adc},               // ADC模块
@@ -156,6 +160,9 @@ static const luaL_Reg loadedlibs[] = {
 #endif
 #ifdef LUAT_USE_TP
   {"tp",     luaopen_tp},
+#endif
+#ifdef LUAT_USE_AUDIO
+  {"audio", luaopen_multimedia_audio},
 #endif
 #ifdef LUAT_USE_SQLITE3
   {"sqlite3",    luaopen_sqlite3},

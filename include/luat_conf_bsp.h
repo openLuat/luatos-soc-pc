@@ -64,6 +64,10 @@
 #define LUAT_USE_MINIZ 1
 #define LUAT_USE_GMSSL 1
 
+#define LUAT_USE_I2S  1
+#define LUAT_USE_MEDIA 1
+#define LUAT_USE_AUDIO 1
+
 //----------------------------
 // 常用工具库, 按需启用, cjson和pack是强烈推荐启用的
 #define LUAT_USE_CRYPTO  1

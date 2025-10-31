@@ -80,6 +80,7 @@ target("luatos-lua")
 
     if is_plat("linux", "macosx") then
         add_links("pthread", "m", "dl")
+        add_links("avformat", "avcodec", "avutil", "swresample")    -- FFmpeg
     end
 
     add_files(luatos.."luat/modules/crc.c"
@@ -192,6 +193,17 @@ target("luatos-lua")
     --mobile
     add_includedirs(luatos.."components/mobile")
     add_files(luatos.."components/mobile/*.c")
+
+    --ffmpeg
+    add_includedirs("ffmpeg_x86/include")
+    add_includedirs("ffmpeg_x86")
+    add_files("ffmpeg_x86/ffmpeg.c")
+
+    -- multimedia
+    add_includedirs(luatos.."components/multimedia",{public = true})
+    add_files(luatos.."components/multimedia/luat_lib_multimedia_audio.c")
+    add_files(luatos.."components/multimedia/luat_audio_tm8211.c")
+    add_files(luatos.."components/multimedia/luat_audio_es8311.c")
 
     ----------------------------------------------------------------------
     -- 网络相关
