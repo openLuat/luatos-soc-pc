@@ -48,21 +48,27 @@ int luat_load_ffmpeg_dlls(void) {
     char dll_dir[MAX_PATH];
     char dll_path[MAX_PATH];
 
-    // 获取exe路径
+    // 获取exe路径和目录
     if (GetModuleFileNameA(NULL, exe_path, MAX_PATH) == 0) {
         return -1;
     }
-
-    // 获取exe目录
     char* last_slash = strrchr(exe_path, '\\');
     if (last_slash) *last_slash = '\0';
 
-    // DLL目录: ..\..\release
+    // plan1: 从..\..\release加载
     snprintf(dll_dir, sizeof(dll_dir), "%s\\..\\..\\release", exe_path);
     snprintf(dll_path, sizeof(dll_path), "%s\\avutil-56.dll", dll_dir);
     h_avutil = LoadLibraryA(dll_path);
+
+    // plan2: 从exe同目录加载
     if (!h_avutil) {
-        return -1;
+        strcpy(dll_dir, exe_path);
+        snprintf(dll_path, sizeof(dll_path), "%s\\avutil-56.dll", dll_dir);
+        h_avutil = LoadLibraryA(dll_path);
+    }
+
+    if (!h_avutil) {
+        return -1;  // 两个位置都没找到
     }
 
     snprintf(dll_path, sizeof(dll_path), "%s\\swresample-3.dll", dll_dir);
