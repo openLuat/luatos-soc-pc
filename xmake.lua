@@ -101,6 +101,7 @@ target("luatos-lua")
             ,luatos.."luat/modules/luat_lib_gpio.c"
             ,luatos.."luat/modules/luat_lib_spi.c"
             ,luatos.."luat/modules/luat_lib_i2c.c"
+            ,luatos.."luat/modules/luat_lib_i2s.c"
             ,luatos.."luat/modules/luat_lib_wdt.c"
             ,luatos.."luat/modules/luat_lib_pm.c"
             ,luatos.."luat/modules/luat_lib_adc.c"

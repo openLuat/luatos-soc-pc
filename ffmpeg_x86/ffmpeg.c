@@ -57,8 +57,8 @@ int luat_load_ffmpeg_dlls(void) {
     char* last_slash = strrchr(exe_path, '\\');
     if (last_slash) *last_slash = '\0';
 
-    // DLL目录: ..\..\ffmpeg_x86\x86
-    snprintf(dll_dir, sizeof(dll_dir), "%s\\..\\..\\ffmpeg_x86\\x86", exe_path);
+    // DLL目录: ..\..\release
+    snprintf(dll_dir, sizeof(dll_dir), "%s\\..\\..\\release", exe_path);
     snprintf(dll_path, sizeof(dll_path), "%s\\avutil-56.dll", dll_dir);
     h_avutil = LoadLibraryA(dll_path);
     if (!h_avutil) {
