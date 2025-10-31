@@ -24,11 +24,6 @@ LuatOS-PC 是一个专为 PC 环境设计的 LuatOS 集成项目，支持 Window
 
 有关本项目的设计细节，请参阅 [设计文档](doc/design.md)。
 
-## 待完成功能
-
-- [ ] ZTT 机制（模拟器）的设计和实现
-- [ ] 跑通 iRTU 代码
-
 ## 已支持的库
 
 - **Lua 基础库**：`io`, `os`, `table`, `math`, `bit` 等。
