@@ -327,9 +327,9 @@ target("luatos-lua")
         add_files(luatos.."components/gtfont/*.c")
         
         -- hzfont component
-        add_includedirs(luatos.."components/hzfont/inc")
-        add_files(luatos.."components/hzfont/src/*.c")
-        add_files(luatos.."components/hzfont/binding/*.c")
+        add_includedirs(luatos_exts.."/hzfont/inc")
+        add_files(luatos_exts.."/hzfont/src/*.c")
+        add_files(luatos_exts.."/hzfont/binding/*.c")
 
         -- airui
         add_includedirs(luatos_exts.."/airui/include")
