@@ -35,7 +35,7 @@ if os.getenv("LUAT_USE_GUI") == "y" then
     add_defines("LUAT_USE_GUI=1")
     add_requires("libsdl2")
     add_packages("libsdl2")
-    -- freetype 用于 PC 端 gtfont 仿真渲染
+    -- freetype 用于 PC 端 gtfont 仿真渲染（使用本地freetype）
     add_requires("freetype")
     add_packages("freetype")
     -- add_requires("libsdl 2.26.2")
@@ -338,6 +338,11 @@ target("luatos-lua")
         add_includedirs(luatos.."components/gtfont")
         add_includedirs(luatos.."components/eink")
         add_files(luatos.."components/gtfont/*.c")
+        
+        -- hzfont component
+        add_includedirs(luatos_exts.."/hzfont/inc")
+        add_files(luatos_exts.."/hzfont/src/*.c")
+        add_files(luatos_exts.."/hzfont/binding/*.c")
 
         -- airui
         add_includedirs(luatos_exts.."/airui/include")
